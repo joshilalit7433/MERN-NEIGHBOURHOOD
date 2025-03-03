@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import Sidebar from "../components/Sidebar";
 
 const MembersDashboard = ({ setIsAuthenticated }) => {
   const navigate = useNavigate();
@@ -12,55 +13,67 @@ const MembersDashboard = ({ setIsAuthenticated }) => {
   });
 
   const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
     setIsAuthenticated(false);
     navigate("/login");
   };
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-3xl font-bold">Welcome back, Member!</h1>
-        <button onClick={handleLogout} className="bg-red-500 text-white px-3 py-1 rounded text-sm">
-          Logout
-        </button>
-      </div>
+    <div className="flex min-h-screen bg-gray-100">
+      {/* Sidebar */}
+      <Sidebar handleLogout={handleLogout} />
 
-      {/* Dashboard Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        {/* Pending Complaints */}
-        <div className="bg-white p-4 rounded-lg shadow text-center">
-          <h2 className="text-xl font-semibold">Pending Complaints</h2>
-          <p className="text-2xl font-bold">{data.pendingComplaints}</p>
+      {/* Main Content */}
+      <div className="flex-grow p-6 lg:ml-64">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold">Welcome back, Member!</h1>
         </div>
 
-        {/* Unpaid Bills */}
-        <div className="bg-white p-4 rounded-lg shadow text-center">
-          <h2 className="text-xl font-semibold">Unpaid Bills</h2>
-          <p className="text-2xl font-bold">₹{data.unpaidBills}</p>
+        {/* Dashboard Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {/* Pending Complaints */}
+          <div className="bg-white p-6 rounded-lg text-center">
+            <h2 className="text-lg font-semibold text-gray-700">
+              Pending Complaints
+            </h2>
+            <p className="text-3xl font-bold text-gray-900">
+              {data.pendingComplaints}
+            </p>
+          </div>
+
+          {/* Unpaid Bills */}
+          <div className="bg-white p-6 rounded-lg text-center">
+            <h2 className="text-lg font-semibold text-gray-700">
+              Unpaid Bills
+            </h2>
+            <p className="text-3xl font-bold text-gray-900">
+              ₹{data.unpaidBills}
+            </p>
+          </div>
+
+          {/* Upcoming Events */}
+          <div className="bg-white p-6 rounded-lg text-center">
+            <h2 className="text-lg font-semibold text-gray-700">
+              Upcoming Events
+            </h2>
+            <p className="text-lg text-gray-900">{data.upcomingEvents}</p>
+          </div>
         </div>
 
-        {/* Upcoming Events */}
-        <div className="bg-white p-4 rounded-lg shadow text-center">
-          <h2 className="text-xl font-semibold">Upcoming Events</h2>
-          <p className="text-lg">{data.upcomingEvents}</p>
+        {/* Notices Section */}
+        <div className="bg-white p-6 rounded-lg">
+          <h2 className="text-lg font-semibold text-gray-700 mb-4">
+            Recent Notices
+          </h2>
+          {data.notices.map((notice, index) => (
+            <p
+              key={index}
+              className="border-b border-gray-200 py-2 text-gray-800"
+            >
+              {notice}
+            </p>
+          ))}
         </div>
-      </div>
-
-      {/* Notices Section */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <h2 className="text-xl font-semibold mb-2">Recent Notices</h2>
-        {data.notices.map((notice, index) => (
-          <p key={index} className="border-b py-2">{notice}</p>
-        ))}
-      </div>
-
-      {/* Emergency Contacts */}
-      <div className="bg-white p-4 rounded-lg shadow">
-        <h2 className="text-xl font-semibold mb-2">Emergency Contacts</h2>
-        <p>🔹 Society Manager: +91 98765 43210</p>
-        <p>🔹 Security Guard: +91 87654 32109</p>
       </div>
     </div>
   );

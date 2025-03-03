@@ -1,70 +1,93 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom'; // Import Link and useNavigate for navigation
-import { auth } from '../firebaseConfig'; // Adjust the path to your Firebase config
-import { signOut } from 'firebase/auth';
+import { Link, useNavigate } from "react-router-dom";
+import { auth } from "../firebaseConfig";
+import { signOut } from "firebase/auth";
+import {
+  LayoutDashboard,
+  Users,
+  UserPlus,
+  DollarSign,
+  Calendar,
+  FileText,
+} from "lucide-react"; // Import Lucide React icons
 
-export default function Sidebar() {
-  const [isOpen, setIsOpen] = useState(true); // State for mobile toggle (optional)
-  const navigate = useNavigate(); // For programmatic navigation on logout
+export default function Sidebar({ handleLogout }) {
+  const navigate = useNavigate();
 
   const sidebarLinks = [
-    { name: 'Dashboard', icon: '🏠', path: '/' },
-    { name: 'Members', icon: '👥', path: '/members' },
-    { name: 'Add Member', icon: '➕', path: '/register' }, // Added "Add Member" link
-    { name: 'Billing', icon: '💰', path: '/billing' },
-    { name: 'Events and Notices', icon: '🎉', path: '/events' },
-    { name: 'Complaints', icon: '📄', path: '/complaints' }, // Updated to "Complaints" only
+    {
+      name: "Dashboard",
+      icon: <LayoutDashboard className="text-purple-400" />,
+      path: "/home",
+    },
+    {
+      name: "Members",
+      icon: <Users className="text-purple-400" />,
+      path: "/members",
+    },
+    {
+      name: "Add Member",
+      icon: <UserPlus className="text-purple-400" />,
+      path: "/register",
+    },
+    {
+      name: "Billing",
+      icon: <DollarSign className="text-yellow-400" />,
+      path: "/billing",
+    },
+    {
+      name: "Events and Notices",
+      icon: <Calendar className="text-pink-400" />,
+      path: "/events",
+    },
+    {
+      name: "Complaints",
+      icon: <FileText className="text-blue-400" />,
+      path: "/complaints",
+    },
   ];
 
-  const handleLogout = async () => {
+  const onLogout = async () => {
     try {
-      await signOut(auth); // Sign out the user from Firebase Authentication
-      navigate('/login'); // Redirect to login page after logout
+      await signOut(auth);
+      handleLogout(); // Call the parent handleLogout to update authentication state
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
+      navigate("/login");
     }
   };
 
   return (
-    <div className="fixed h-screen bg-gray-900 shadow-lg w-64 p-4 text-white">
+    <div className="fixed h-screen bg-[#1f2a44] shadow-lg w-64 text-white overflow-hidden">
       {/* Logo/Title */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+      <div className="mb-8 p-4">
+        <h1 className="text-2xl font-bold uppercase">Dashboard</h1>
       </div>
 
       {/* Navigation Links */}
-      <div className="space-y-4">
+      <div className="space-y-2">
         {sidebarLinks.map((link) => (
           <Link
             key={link.name}
             to={link.path}
-            className={`flex items-center p-2 rounded-lg hover:bg-gray-700 hover:text-white ${
-              window.location.pathname === link.path ? 'bg-gray-700' : ''
+            className={`flex items-center p-3 rounded-lg hover:bg-gray-700 transition-colors ${
+              window.location.pathname === link.path ? "bg-gray-700" : ""
             }`}
           >
-            <span className="mr-3 text-xl">{link.icon}</span>
-            <span className="text-sm font-medium">{link.name}</span>
+            <span className="text-xl">{link.icon}</span>
+            <span className="ml-3 text-sm font-medium">{link.name}</span>
           </Link>
         ))}
       </div>
 
       {/* Logout Button */}
-      <div className="mt-8">
+      <div className="absolute bottom-4 left-4 right-4">
         <button
-          onClick={handleLogout}
-          className="w-full px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition"
+          onClick={onLogout}
+          className="w-full px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
         >
           Logout
         </button>
       </div>
-
-      {/* Optional: Mobile Toggle Button (hidden on desktop) */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="md:hidden p-2 bg-gray-800 text-white rounded-lg fixed top-4 left-4 z-50"
-      >
-        {isOpen ? '✖' : '☰'}
-      </button>
     </div>
   );
 }

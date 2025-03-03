@@ -1,16 +1,17 @@
-// src/components/Login.jsx
-import React, { useState } from 'react';
-import { auth } from '../firebaseConfig'; // Adjust the path
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom"; // Import useNavigate for redirection
+import { auth } from "../firebaseConfig"; // Adjust the path
+import { signInWithEmailAndPassword } from "firebase/auth";
 
-export default function Login({ setIsAuthenticated }) { // Accept setIsAuthenticated prop
+export default function Login({ setIsAuthenticated }) {
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+    email: "",
+    password: "",
   });
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-  const [loading, setLoading] = useState(false); // Add loading state
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate(); // Hook for navigation
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -27,8 +28,8 @@ export default function Login({ setIsAuthenticated }) { // Accept setIsAuthentic
     setLoading(true);
 
     try {
-      console.log('Attempting to log in with email:', formData.email);
-      
+      console.log("Attempting to log in with email:", formData.email);
+
       // Sign in user with email and password
       const userCredential = await signInWithEmailAndPassword(
         auth,
@@ -38,19 +39,23 @@ export default function Login({ setIsAuthenticated }) { // Accept setIsAuthentic
 
       const user = userCredential.user;
 
-      console.log('User logged in with UID:', user.uid);
+      console.log("User logged in with UID:", user.uid);
 
-      setSuccess('Logged in successfully!');
+      setSuccess("Logged in successfully!");
       setFormData({
-        email: '',
-        password: '',
+        email: "",
+        password: "",
       });
+
       if (setIsAuthenticated) {
-        setIsAuthenticated(true); // Update authentication state in App.jsx
+        setIsAuthenticated(true); // Update authentication state
       }
+
+      // Redirect to /home after successful login
+      navigate("/home");
     } catch (error) {
-      console.error('Login error:', error);
-      setError(error.message || 'An error occurred during login.');
+      console.error("Login error:", error);
+      setError(error.message || "An error occurred during login.");
     } finally {
       setLoading(false);
     }
@@ -65,7 +70,10 @@ export default function Login({ setIsAuthenticated }) { // Accept setIsAuthentic
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Email Input */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700"
+            >
               Email
             </label>
             <input
@@ -82,7 +90,10 @@ export default function Login({ setIsAuthenticated }) { // Accept setIsAuthentic
 
           {/* Password Input */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700"
+            >
               Password
             </label>
             <input
@@ -102,14 +113,15 @@ export default function Login({ setIsAuthenticated }) { // Accept setIsAuthentic
             <button
               type="submit"
               disabled={loading}
-              className={`mt-4 px-4 py-2 ${loading ? 'bg-gray-400' : 'bg-indigo-600'} text-white rounded-md hover:${loading ? '' : 'bg-indigo-700'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
+              className={`mt-4 px-4 py-2 ${
+                loading ? "bg-gray-400" : "bg-indigo-600"
+              } text-white rounded-md hover:${
+                loading ? "" : "bg-indigo-700"
+              } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
             >
-              {loading ? 'Logging in...' : 'Login'}
+              {loading ? "Logging in..." : "Login"}
             </button>
           </div>
-
-          {/* Optional: Link to Register */}
-          
         </form>
       </div>
     </div>

@@ -1,18 +1,18 @@
 "use client"; // Mark as a Client Component since we use useState and Firebase hooks
 
-import React, { useState } from 'react';
-import { auth, database } from '../../lib/FirebaseConfig'; // Adjusted for your structure
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { ref, set } from 'firebase/database';
+import React, { useState } from "react";
+import { auth, database } from "../../lib/FirebaseConfig"; // Adjusted for your structure
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { ref, set } from "firebase/database";
 
 export default function Register() {
   const [formData, setFormData] = useState({
-    name: '',
-    flatNo: '',
-    contactNo: '',
-    email: '',
-    password: '',
-    role: 'resident', // Default role
+    name: "",
+    flatNo: "",
+    contactNo: "",
+    email: "",
+    password: "",
+    role: "resident", // Default role
   });
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -33,8 +33,8 @@ export default function Register() {
     setLoading(true);
 
     try {
-      console.log('Attempting to register user with email:', formData.email);
-      
+      console.log("Attempting to register user with email:", formData.email);
+
       // Create user with email and password using Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(
         auth,
@@ -44,14 +44,14 @@ export default function Register() {
 
       const user = userCredential.user;
 
-      console.log('User created with UID:', user.uid);
+      console.log("User created with UID:", user.uid);
 
       // Update the user's profile (optional, e.g., to set displayName)
       await updateProfile(user, {
         displayName: formData.name,
       });
 
-      console.log('User profile updated with name:', formData.name);
+      console.log("User profile updated with name:", formData.name);
 
       // Store additional user data in Realtime Database under 'users' node
       const userRef = ref(database, `users/${user.uid}`);
@@ -65,20 +65,20 @@ export default function Register() {
         createdAt: new Date().toISOString(),
       });
 
-      console.log('User data stored in Realtime Database');
+      console.log("User data stored in Realtime Database");
 
-      setSuccess('User registered successfully!');
+      setSuccess("User registered successfully!");
       setFormData({
-        name: '',
-        flatNo: '',
-        contactNo: '',
-        email: '',
-        password: '',
-        role: 'resident',
+        name: "",
+        flatNo: "",
+        contactNo: "",
+        email: "",
+        password: "",
+        role: "resident",
       });
     } catch (error) {
-      console.error('Registration error:', error);
-      setError(error.message || 'An error occurred during registration.');
+      console.error("Registration error:", error);
+      setError(error.message || "An error occurred during registration.");
     } finally {
       setLoading(false);
     }
@@ -87,13 +87,18 @@ export default function Register() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-center">Register New User</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center">
+          Register New User
+        </h2>
         {error && <p className="text-red-500 text-center">{error}</p>}
         {success && <p className="text-green-500 text-center">{success}</p>}
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name Input */}
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium text-gray-700"
+            >
               Name
             </label>
             <input
@@ -110,7 +115,10 @@ export default function Register() {
 
           {/* Flat No. Input */}
           <div>
-            <label htmlFor="flatNo" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="flatNo"
+              className="block text-sm font-medium text-gray-700"
+            >
               Flat No.
             </label>
             <input
@@ -127,7 +135,10 @@ export default function Register() {
 
           {/* Contact No. Input */}
           <div>
-            <label htmlFor="contactNo" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="contactNo"
+              className="block text-sm font-medium text-gray-700"
+            >
               Contact No.
             </label>
             <input
@@ -144,7 +155,10 @@ export default function Register() {
 
           {/* Email Input */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700"
+            >
               Email
             </label>
             <input
@@ -161,7 +175,10 @@ export default function Register() {
 
           {/* Password Input */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700"
+            >
               Password
             </label>
             <input
@@ -178,7 +195,9 @@ export default function Register() {
 
           {/* Role Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">Role</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Role
+            </label>
             <div className="mt-1 flex space-x-4">
               <label className="inline-flex items-center">
                 <input
@@ -186,7 +205,7 @@ export default function Register() {
                   id="resident"
                   name="role"
                   value="resident"
-                  checked={formData.role === 'resident'}
+                  checked={formData.role === "resident"}
                   onChange={handleChange}
                   className="form-radio text-indigo-600"
                 />
@@ -198,7 +217,7 @@ export default function Register() {
                   id="member"
                   name="role"
                   value="member"
-                  checked={formData.role === 'member'}
+                  checked={formData.role === "member"}
                   onChange={handleChange}
                   className="form-radio text-indigo-600"
                 />
@@ -212,9 +231,13 @@ export default function Register() {
             <button
               type="submit"
               disabled={loading}
-              className={`mt-4 px-4 py-2 ${loading ? 'bg-gray-400' : 'bg-indigo-600'} text-white rounded-md hover:${loading ? '' : 'bg-indigo-700'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
+              className={`mt-4 px-4 py-2 ${
+                loading ? "bg-gray-400" : "bg-indigo-600"
+              } text-white rounded-md hover:${
+                loading ? "" : "bg-indigo-700"
+              } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
             >
-              {loading ? 'Registering...' : 'Register'}
+              {loading ? "Registering..." : "Register"}
             </button>
           </div>
         </form>
