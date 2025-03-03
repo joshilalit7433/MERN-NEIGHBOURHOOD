@@ -1,4 +1,3 @@
-// src/components/Sidebar.jsx
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom'; // Import Link and useNavigate for navigation
 import { auth } from '../firebaseConfig'; // Adjust the path to your Firebase config
@@ -10,12 +9,11 @@ export default function Sidebar() {
 
   const sidebarLinks = [
     { name: 'Dashboard', icon: '🏠', path: '/' },
-    { name: 'Maintenance', icon: '🛠️', path: '/maintenance' },
     { name: 'Members', icon: '👥', path: '/members' },
+    { name: 'Add Member', icon: '➕', path: '/register' }, // Added "Add Member" link
     { name: 'Billing', icon: '💰', path: '/billing' },
     { name: 'Events and Notices', icon: '🎉', path: '/events' },
     { name: 'Complaints', icon: '📄', path: '/complaints' }, // Updated to "Complaints" only
-
   ];
 
   const handleLogout = async () => {

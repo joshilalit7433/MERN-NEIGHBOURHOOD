@@ -1,142 +1,229 @@
-import React, { useState } from 'react';
-import { 
-  signInWithPhoneNumber, 
-  RecaptchaVerifier, 
-  auth 
-} from 'firebase/auth'; // Import RecaptchaVerifier and phone auth functions
+import React, { useState, useEffect } from 'react';
+import { getAuth } from 'firebase/auth'; // Use getAuth for Firebase v9+
 import { firestore } from '../firebaseConfig'; // Adjust the path to your Firebase config
+import { 
+  collection, 
+  getDocs, 
+  query, 
+  where, 
+  orderBy, 
+  addDoc, 
+  serverTimestamp 
+} from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../Authcontext'; // Adjust path
+import { useAuth } from '../AuthContext.jsx'; // Adjust path (note: corrected from 'Authcontext' to 'AuthContext')
 
-export default function Login({ setIsAuthenticated }) {
-  const [phoneNumber, setPhoneNumber] = useState(''); // State for phone number
-  const [verificationCode, setVerificationCode] = useState(''); // State for verification code
-  const [error, setError] = useState(null); // Error state
-  const [success, setSuccess] = useState(null); // Success state
-  const [confirmationResult, setConfirmationResult] = useState(null); // Store confirmation result for verification
-  const [showVerification, setShowVerification] = useState(false); // Toggle between phone input and code input
+export default function CreateNewBill() {
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const { setUser } = useAuth(); // Get setUser from AuthContext
 
-  // Initialize reCAPTCHA verifier
+  const [formData, setFormData] = useState({
+    memberName: '',
+    memberId: '',
+    amount: '',
+    dueDate: '',
+  });
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+
+  // Initialize Firebase Authentication (though not directly used here, included for consistency)
+  const auth = getAuth();
+
   useEffect(() => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier('recaptcha-container', {
-        size: 'invisible', // Use invisible reCAPTCHA (can also use 'normal' for visible)
-        callback: (response) => {
-          console.log('reCAPTCHA verified:', response);
-        },
-        'expired-callback': () => {
-          setError('reCAPTCHA verification expired. Please try again.');
-        },
-      }, auth);
-    }
-  }, []);
+    if (loading) return;
 
-  const handlePhoneSubmit = async (e) => {
+    if (!user) {
+      navigate('/register'); // Redirect to register if not authenticated
+      return;
+    }
+
+    const fetchMembers = async () => {
+      try {
+        let membersQuery = query(
+          collection(firestore, 'users'),
+          orderBy('name')
+        );
+
+        if (searchQuery.trim()) {
+          membersQuery = query(
+            collection(firestore, 'users'),
+            where('name', '>=', searchQuery.trim()),
+            where('name', '<=', searchQuery.trim() + '\uf8ff'),
+            orderBy('name')
+          );
+        }
+
+        const querySnapshot = await getDocs(membersQuery);
+        const membersData = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          name: doc.data().name || 'Anonymous',
+          flat: doc.data().flatNo || 'N/A',
+          contact: doc.data().contactNo || 'N/A',
+        }));
+        setSearchResults(membersData);
+      } catch (err) {
+        console.error('Error fetching members:', err);
+        setError('Failed to fetch members. Please try again.');
+      }
+    };
+
+    fetchMembers();
+
+    // Cleanup (optional, but good practice)
+    return () => {
+      // No cleanup needed for this effect, but included for consistency
+    };
+  }, [user, loading, searchQuery, navigate]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handleSelectMember = (member) => {
+    setFormData(prev => ({
+      ...prev,
+      memberName: member.name,
+      memberId: member.id,
+    }));
+    setSearchResults([]);
+    setSearchQuery('');
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
 
-    if (!phoneNumber.trim()) {
-      setError('Please enter a phone number.');
+    if (!formData.memberName.trim() || !formData.amount.trim() || !formData.dueDate.trim()) {
+      setError('All fields are required.');
       return;
     }
 
     try {
-      const formattedPhone = `+91${phoneNumber}`; // Adjust country code as needed (e.g., +91 for India)
-      const confirmation = await signInWithPhoneNumber(auth, formattedPhone, window.recaptchaVerifier);
-      setConfirmationResult(confirmation);
-      setShowVerification(true);
-      setSuccess('Verification code sent to your phone. Please enter it below.');
-    } catch (err) {
-      console.error('Error sending verification code:', err);
-      setError('Failed to send verification code. Please check the phone number and try again.');
+      if (!user) {
+        throw new Error('User not authenticated. Please log in or register.');
+      }
+
+      await addDoc(collection(firestore, 'bills'), {
+        memberName: formData.memberName,
+        memberId: formData.memberId,
+        amount: parseFloat(formData.amount),
+        dueDate: new Date(formData.dueDate).toISOString(),
+        createdBy: user.uid,
+        createdAt: serverTimestamp(),
+        status: 'Pending',
+      });
+
+      setSuccess('Bill created successfully!');
+      setFormData({
+        memberName: '',
+        memberId: '',
+        amount: '',
+        dueDate: '',
+      });
+      setTimeout(() => navigate('/billing'), 1000);
+    } catch (error) {
+      console.error('Error creating bill:', error);
+      setError('Failed to create bill. Please try again.');
     }
   };
 
-  const handleCodeSubmit = async (e) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(null);
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center bg-gray-50">Loading...</div>;
+  }
 
-    if (!verificationCode.trim()) {
-      setError('Please enter the verification code.');
-      return;
-    }
-
-    try {
-      const result = await confirmationResult.confirm(verificationCode);
-      const user = result.user;
-      setUser(user); // Update AuthContext with the authenticated user
-      setIsAuthenticated(true); // Update parent state if needed
-      navigate('/'); // Redirect to home or another page after login
-      setSuccess('Successfully logged in!');
-    } catch (err) {
-      console.error('Error verifying code:', err);
-      setError('Invalid verification code. Please try again.');
-    }
-  };
+  if (!user) {
+    return <Navigate to="/register" replace />;
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
-        {error && <p className="text-red-500 text-center mb-4">{error}</p>}
-        {success && <p className="text-green-500 text-center mb-4">{success}</p>}
-        
-        <div id="recaptcha-container"></div> {/* Container for reCAPTCHA */}
-
-        {!showVerification ? (
-          <form onSubmit={handlePhoneSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                id="phoneNumber"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="Enter your phone number (e.g., 9876543210)"
-                required
-              />
-            </div>
-            <div className="text-center">
-              <button
-                type="submit"
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                Send Verification Code
-              </button>
-            </div>
-          </form>
-        ) : (
-          <form onSubmit={handleCodeSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="verificationCode" className="block text-sm font-medium text-gray-700">
-                Verification Code
-              </label>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-md mx-auto border-2 border-black rounded-lg p-6 bg-white">
+        <h1 className="text-2xl font-bold mb-6 font-cursive">CREATE NEW BILL</h1>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="memberName" className="block text-sm font-medium text-gray-700 font-cursive">
+              Member NAME
+            </label>
+            <div className="relative">
               <input
                 type="text"
-                id="verificationCode"
-                value={verificationCode}
-                onChange={(e) => setVerificationCode(e.target.value)}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="Enter the 6-digit code"
+                id="memberName"
+                name="memberName"
+                value={searchQuery || formData.memberName}
+                onChange={handleSearchChange}
+                className="mt-1 block w-full border-2 border-black rounded-md p-2 font-cursive focus:outline-none focus:ring-0"
+                placeholder="Search member..."
+              />
+              {searchResults.length > 0 && (
+                <ul className="absolute z-10 w-full bg-white border-2 border-black rounded-md mt-1 max-h-40 overflow-y-auto shadow-lg">
+                  {searchResults.map((member) => (
+                    <li
+                      key={member.id}
+                      onClick={() => handleSelectMember(member)}
+                      className="p-2 cursor-pointer hover:bg-gray-100 font-cursive"
+                    >
+                      {member.name} (Flat: {member.flat}, Contact: {member.contact})
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+          <div>
+            <label htmlFor="amount" className="block text-sm font-medium text-gray-700 font-cursive">
+              AMOUNT
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-cursive">₹</span>
+              <input
+                type="number"
+                id="amount"
+                name="amount"
+                value={formData.amount}
+                onChange={handleChange}
+                className="mt-1 block w-full border-2 border-black rounded-md p-2 pl-8 font-cursive focus:outline-none focus:ring-0"
+                placeholder="Enter amount"
+                step="0.01"
                 required
               />
             </div>
-            <div className="text-center">
-              <button
-                type="submit"
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                Verify Code
-              </button>
-            </div>
-          </form>
+          </div>
+          <div>
+            <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 font-cursive">
+              Due Date
+            </label>
+            <input
+              type="date"
+              id="dueDate"
+              name="dueDate"
+              value={formData.dueDate}
+              onChange={handleChange}
+              className="mt-1 block w-full border-2 border-black rounded-md p-2 font-cursive focus:outline-none focus:ring-0"
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            className="mt-4 px-6 py-2 bg-blue-500 text-white border-2 border-black rounded-md font-cursive hover:bg-blue-600 transition"
+          >
+            SUBMIT
+          </button>
+        </form>
+        {(success || error) && (
+          <p className={`text-center mt-4 ${success ? 'text-green-500' : 'text-red-500'}`}>
+            {success || error}
+          </p>
         )}
       </div>
     </div>

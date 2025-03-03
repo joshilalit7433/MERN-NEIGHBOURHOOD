@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../Authcontext.jsx'; // Adjust path to match your project structure
+import { useAuth } from '../AuthContext.jsx'; // Corrected path (changed from 'Authcontext' to 'AuthContext')
 import { firestore } from '../firebaseConfig'; // Adjust the path to your Firebase config
 import { 
   collection, 
@@ -87,13 +87,6 @@ export default function Members() {
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-6 text-gray-900">Member Management</h1>
       
-        <Link
-          to="/add-member"
-          className="mb-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition"
-        >
-          Add New Member
-        </Link>
-
         <div className="overflow-x-auto">
           <table className="w-full border border-gray-300 shadow-md">
             <thead className="bg-gray-200">

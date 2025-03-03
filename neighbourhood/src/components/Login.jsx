@@ -109,12 +109,7 @@ export default function Login({ setIsAuthenticated }) { // Accept setIsAuthentic
           </div>
 
           {/* Optional: Link to Register */}
-          <p className="text-center text-sm text-gray-600 mt-4">
-            Don’t have an account?{' '}
-            <a href="/register" className="text-indigo-600 hover:underline">
-              Register here
-            </a>
-          </p>
+          
         </form>
       </div>
     </div>

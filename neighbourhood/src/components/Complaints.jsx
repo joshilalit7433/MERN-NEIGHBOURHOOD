@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../Authcontext'; // Adjust path to match your project structure
+import { useAuth } from '../AuthContext.jsx'; // Corrected path
 import { firestore } from '../firebaseConfig'; // Adjust the path to your Firebase config
 import { 
   collection, 
   getDocs, 
   query, 
   orderBy, 
+  updateDoc, 
+  doc, 
   addDoc, 
   serverTimestamp, 
-  doc, 
   getDoc 
 } from 'firebase/firestore';
+import { Navigate, useNavigate } from 'react-router-dom'; // Added useNavigate for navigation
 
 export default function Complaints() {
   const { user, loading } = useAuth(); // Use auth context for user data
@@ -18,38 +20,36 @@ export default function Complaints() {
   const [error, setError] = useState(null); // Error state
   const [isModalOpen, setIsModalOpen] = useState(false); // State for modal visibility
   const [formData, setFormData] = useState({
-    name: '', // Will be fetched from Firestore
-    flatNumber: '', // Will be fetched from Firestore
-    description: '',
-    status: 'Open', // Default status for new complaints
+    member: '', // Will be fetched from Firestore (user's name)
+    issue: '',
+    status: 'Pending', // Default status for new complaints
   });
   const [formError, setFormError] = useState(null); // Form error state
   const [formSuccess, setFormSuccess] = useState(null); // Form success state
+  const navigate = useNavigate(); // Added navigate function for routing
 
-  // Fetch user data (name and flat number) from Firestore when user is authenticated
+  // Fetch user data (name) from Firestore when user is authenticated
   useEffect(() => {
     if (loading) return;
 
     if (!user) {
-      window.location.href = '/login'; // Redirect to login if not authenticated
-      return;
+      return <Navigate to="/register" replace />;
     }
 
     const fetchUserData = async () => {
       try {
-        const userDoc = await getDoc(doc(firestore, 'users', user.uid));
+        const userDocRef = doc(firestore, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef); // Use getDoc to fetch user data
         if (userDoc.exists()) {
           const userData = userDoc.data();
           setFormData(prev => ({
             ...prev,
-            name: userData.name || 'Anonymous', // Use Firestore name or fallback
-            flatNumber: userData.flatNo || '', // Use Firestore flatNo (matching your screenshot)
+            member: userData.name || 'Anonymous', // Use Firestore name or fallback
           }));
         } else {
           setFormData(prev => ({
             ...prev,
-            name: 'Anonymous',
-            flatNumber: '',
+            member: 'Anonymous',
           }));
           console.warn('User document not found in Firestore.');
         }
@@ -58,8 +58,7 @@ export default function Complaints() {
         setError('Failed to fetch user data. Please try again.');
         setFormData(prev => ({
           ...prev,
-          name: 'Anonymous',
-          flatNumber: '',
+          member: 'Anonymous',
         }));
       }
     };
@@ -72,8 +71,7 @@ export default function Complaints() {
     if (loading) return;
 
     if (!user) {
-      window.location.href = '/login'; // Redirect to login if not authenticated
-      return;
+      return <Navigate to="/register" replace />; // Use Navigate for React Router
     }
 
     const fetchComplaints = async () => {
@@ -85,7 +83,9 @@ export default function Complaints() {
         const querySnapshot = await getDocs(complaintsQuery);
         const complaintsData = querySnapshot.docs.map(doc => ({
           id: doc.id,
-          ...doc.data(),
+          member: doc.data().name || 'Anonymous', // Match Firestore field
+          issue: doc.data().description || 'No issue provided', // Match Firestore field
+          status: doc.data().status || 'Pending',
         }));
         setComplaints(complaintsData);
       } catch (err) {
@@ -110,27 +110,26 @@ export default function Complaints() {
     setFormError(null);
     setFormSuccess(null);
 
-    if (!formData.flatNumber.trim() || !formData.description.trim()) {
-      setFormError('Flat number and description are required.');
+    if (!formData.issue.trim()) {
+      setFormError('Issue description is required.');
       return;
     }
 
     try {
       await addDoc(collection(firestore, 'complaints'), {
-        name: formData.name,
-        flatNumber: formData.flatNumber,
-        description: formData.description,
-        status: formData.status, // Add status to the complaint
+        name: formData.member, // Store member name
+        description: formData.issue, // Store issue description
+        status: formData.status, // Explicitly store status (matches Firestore screenshot)
         createdBy: user.uid,
         createdAt: serverTimestamp(),
+        flatNumber: '', // Added to match Firestore structure (optional, can be removed if not needed)
       });
 
       setFormSuccess('Complaint filed successfully!');
       setFormData({
-        name: formData.name, // Keep user's name (read-only from Firestore)
-        flatNumber: '', // Clear flat number after submission
-        description: '', // Clear description after submission
-        status: 'Open', // Reset status to default
+        member: formData.member, // Keep user's name (read-only from Firestore)
+        issue: '', // Clear issue after submission
+        status: 'Pending', // Reset status to default
       });
       setIsModalOpen(false); // Close modal after success
     } catch (error) {
@@ -144,7 +143,7 @@ export default function Complaints() {
   }
 
   if (!user) {
-    return null;
+    return <Navigate to="/register" replace />; // Use Navigate for React Router
   }
 
   if (error) {
@@ -153,86 +152,97 @@ export default function Complaints() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="border-2 border-black rounded-lg p-6 max-w-2xl mx-auto bg-white">
+      <div className="border border-black rounded-lg p-6 max-w-4xl mx-auto bg-white shadow-lg">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold font-cursive">COMPLAINTS</h1>
+          <h1 className="text-2xl font-bold">Complaints</h1>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 bg-white border-2 border-black rounded-md font-cursive hover:bg-gray-100 transition"
+            className="px-4 py-2 bg-white border border-black rounded-md hover:bg-gray-100 transition"
           >
             File Complaint
           </button>
         </div>
-        <div className="space-y-4">
-          {complaints.map((complaint) => (
-            <div
-              key={complaint.id}
-              className="border-2 border-black rounded-md p-4 font-cursive"
-            >
-              <p className="text-gray-800"><strong>Description:</strong> {complaint.description || 'No description provided'}</p>
-              <p className="text-gray-600"><strong>Name:</strong> {complaint.name || 'Anonymous'}</p>
-              <p className="text-gray-600"><strong>Flat Number:</strong> {complaint.flatNumber || 'N/A'}</p>
-              <p className="text-gray-600"><strong>Status:</strong> {complaint.status || 'Open'}</p>
-              <p className="text-gray-500 text-sm">
-                <strong>Created At:</strong> {complaint.createdAt?.toDate().toLocaleString() || 'Unknown'}
-              </p>
-            
-            </div>
-          ))}
+        <div className="overflow-x-auto">
+          <table className="w-full border border-gray-300">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="px-4 py-2 border font-semibold text-left">Member</th>
+                <th className="px-4 py-2 border font-semibold text-left">Issue</th>
+                <th className="px-4 py-2 border font-semibold text-left">Status</th>
+                <th className="px-4 py-2 border font-semibold text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {complaints.map((complaint) => (
+                <tr key={complaint.id} className="odd:bg-white even:bg-gray-50">
+                  <td className="px-4 py-2 border">{complaint.member}</td>
+                  <td className="px-4 py-2 border">{complaint.issue}</td>
+                  <td
+                    className={`px-4 py-2 border font-semibold ${
+                      complaint.status === "Pending"
+                        ? "text-red-600"
+                        : complaint.status === "In Progress"
+                        ? "text-yellow-600"
+                        : "text-green-600"
+                    }`}
+                  >
+                    {complaint.status}
+                  </td>
+                  <td className="px-4 py-2 border">
+                    <button
+                      onClick={() => navigate(`/complaint/${complaint.id}`)} // Navigate to ComplaintDetails
+                      className="px-3 py-1 border border-black rounded-md bg-white hover:bg-gray-100 transition"
+                    >
+                      View Details
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {complaints.length === 0 && (
+            <p className="text-center mt-4 text-gray-500">No complaints found.</p>
+          )}
         </div>
       </div>
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-md max-w-md w-full">
-            <h2 className="text-2xl font-bold mb-4 font-cursive text-center">File Complaint</h2>
+            <h2 className="text-2xl font-bold mb-4 text-center">File Complaint</h2>
             {formError && <p className="text-red-500 text-center mb-4">{formError}</p>}
             {formSuccess && <p className="text-green-500 text-center mb-4">{formSuccess}</p>}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 font-cursive">
-                  Name
+                <label htmlFor="member" className="block text-sm font-medium text-gray-700">
+                  Member
                 </label>
                 <input
                   type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
+                  id="member"
+                  name="member"
+                  value={formData.member}
                   readOnly
-                  className="mt-1 block w-full border-2 border-black rounded-md p-2 bg-gray-100 cursor-not-allowed font-cursive"
+                  className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-gray-200 cursor-not-allowed"
                   placeholder="Your name"
                 />
               </div>
               <div>
-                <label htmlFor="flatNumber" className="block text-sm font-medium text-gray-700 font-cursive">
-                  Flat Number
-                </label>
-                <input
-                  type="text"
-                  id="flatNumber"
-                  name="flatNumber"
-                  value={formData.flatNumber}
-                  readOnly
-                  className="mt-1 block w-full border-2 border-black rounded-md p-2 bg-gray-100 cursor-not-allowed font-cursive"
-                  placeholder="Enter your flat number"
-                />
-              </div>
-              <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 font-cursive">
-                  Description
+                <label htmlFor="issue" className="block text-sm font-medium text-gray-700">
+                  Issue
                 </label>
                 <textarea
-                  id="description"
-                  name="description"
-                  value={formData.description}
+                  id="issue"
+                  name="issue"
+                  value={formData.issue}
                   onChange={handleChange}
-                  className="mt-1 block w-full border-2 border-black rounded-md p-2 h-32 font-cursive resize-none focus:outline-none focus:ring-0"
-                  placeholder="Describe your complaint..."
+                  className="mt-1 block w-full border border-black rounded-md p-2 h-32 resize-none focus:outline-none focus:ring-0"
+                  placeholder="Describe your issue..."
                   required
                 ></textarea>
               </div>
               <div>
-                <label htmlFor="status" className="block text-sm font-medium text-gray-700 font-cursive">
+                <label htmlFor="status" className="block text-sm font-medium text-gray-700">
                   Status
                 </label>
                 <select
@@ -240,24 +250,25 @@ export default function Complaints() {
                   name="status"
                   value={formData.status}
                   onChange={handleChange}
-                  className="mt-1 block w-full border-2 border-black rounded-md p-2 font-cursive focus:outline-none focus:ring-0"
+                  className="mt-1 block w-full border border-black rounded-md p-2 focus:outline-none focus:ring-0"
                   required
                 >
-                  <option value="Open">Open</option>
-                  <option value="Closed">Closed</option>
+                  <option value="Pending">Pending</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Completed">Completed</option>
                 </select>
               </div>
               <div className="flex justify-between">
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-white border-2 border-black rounded-md font-cursive hover:bg-gray-100 transition"
+                  className="px-4 py-2 bg-white border border-black rounded-md hover:bg-gray-100 transition"
                 >
                   Submit
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-white border-2 border-black rounded-md font-cursive hover:bg-gray-100 transition"
+                  className="px-4 py-2 bg-white border border-black rounded-md hover:bg-gray-100 transition"
                 >
                   Cancel
                 </button>
