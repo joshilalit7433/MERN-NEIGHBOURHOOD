@@ -51,12 +51,8 @@ export default function Sidebar() {
             name: "Complaints",
             icon: <FileText className="text-blue-400" />,
             path: "/complaints",
-          },
-          {
-            name: "File Complaint",
-            icon: <FileText className="text-blue-400" />, // Using FileText for consistency
-            path: "/file-complaint",
-          },
+          }
+         
         ]
       : []),
     {
