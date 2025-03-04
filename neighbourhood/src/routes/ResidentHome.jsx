@@ -1,6 +1,6 @@
-// src/components/ResidentDashboard.jsx
 import React from 'react';
-import ResidentSidebar from '../components/Resident/ResidentSidebar'; // Import ResidentSidebar component
+import ResidentSidebar from '../components/Resident/ResidentSidebar.jsx'; // Updated to include .jsx extension
+import { Link } from 'react-router-dom'; // Ensure Link is imported for navigation
 
 export default function ResidentDashboard() {
   return (
@@ -43,7 +43,7 @@ export default function ResidentDashboard() {
 
               {/* Quick Link: Billing */}
               <Link
-                to="/billing"
+                to="/resident-billing" // Updated to point to /resident-billing
                 className="bg-yellow-100 p-4 rounded-lg border border-yellow-300 hover:bg-yellow-200 transition-colors"
               >
                 <h3 className="text-lg font-medium text-yellow-800">View Billing</h3>

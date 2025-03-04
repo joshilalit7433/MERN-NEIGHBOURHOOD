@@ -1,12 +1,11 @@
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './AuthContext.jsx'; // Ensure correct path
-import { useState, useEffect, Suspense } from 'react';
-import './App.css';
-import Loading from './components/Loading'; // Import Loading component
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { firestore } from './firebaseConfig.js';
+import React, { useState, useEffect, Suspense, Component } from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate, useNavigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './AuthContext.jsx';
 import { doc, getDoc } from 'firebase/firestore';
+import { firestore } from './firebaseConfig.js';
+import './App.css';
+import Loading from './components/Loading';
+
 // Lazy load components
 const Maintenance = React.lazy(() => import('./components/Maintenance'));
 const Members = React.lazy(() => import('./components/Members'));
@@ -18,44 +17,59 @@ const Login = React.lazy(() => import('./components/Login'));
 const CreateNotice = React.lazy(() => import('./components/CreateNotice'));
 const NoticeDetails = React.lazy(() => import('./components/NoticeDetails'));
 const CreateNewBill = React.lazy(() => import('./components/CreateNewBill'));
-const ComplaintDetails = React.lazy(() => import('./components/Complaints.jsx')); // Corrected path
 const Home = React.lazy(() => import('./routes/Home.jsx'));
 const FileComplaint = React.lazy(() => import('./components/FileComplaint.jsx'));
 const Profile = React.lazy(() => import('./components/Profile.jsx'));
-const ResidentDashboard = React.lazy(() => import('./routes/ResidentHome.jsx'));
-const CommitteeDashboard = React.lazy(() => import('./routes/Home.jsx'));
+const ResidentDashboard = React.lazy(() => import('./routes/ResidentHome.jsx')); // Updated to match ResidentDashboard.jsx
+const ResidentBilling = React.lazy(() => import('./components/Resident/ResidentBilling.jsx'));
 
-// Import firestore from firebaseConfig for role fetching
+// Error Boundary
+class ErrorBoundary extends Component {
+  state = { error: null };
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  render() {
+    if (this.state.error) {
+      return <h1>Error: {this.state.error.message}</h1>;
+    }
+    return this.props.children;
+  }
+}
 
-
-// Role-based routing hook
 function useRoleBasedRedirect() {
   const { user, loading } = useAuth();
-  const navigate = useNavigate(); // Now safe to use since <Router> is in App
+  const navigate = useNavigate();
   const [role, setRole] = useState(null);
   const [roleLoading, setRoleLoading] = useState(true);
 
   useEffect(() => {
+    console.log('useRoleBasedRedirect - loading:', loading, 'user:', user);
     if (loading) return;
 
     if (!user) {
-      navigate('/login'); // Redirect to login if not authenticated
+      console.log('No user, redirecting to /login');
+      setRoleLoading(false);
+      navigate('/login');
       return;
     }
 
     const fetchUserRole = async () => {
       try {
+        console.log('Fetching role for user:', user.uid);
         const userDocRef = doc(firestore, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          setRole(userData.role || 'Resident'); // Default to 'Resident'
+          console.log('User data:', userData);
+          setRole(userData.role || 'Resident');
         } else {
+          console.log('No user doc found, defaulting to Resident');
           setRole('Resident');
         }
       } catch (err) {
         console.error('Error fetching user role:', err);
-        setRole('Resident');
+        setRole('Resident'); // Fallback to Resident on error
       } finally {
         setRoleLoading(false);
       }
@@ -69,143 +83,76 @@ function useRoleBasedRedirect() {
 
 function AppContent() {
   const { role, roleLoading } = useRoleBasedRedirect();
+  const { loading } = useAuth();
 
-  if (roleLoading) {
+  console.log('AppContent - roleLoading:', roleLoading, 'loading:', loading, 'role:', role);
+
+  if (roleLoading || loading) {
     return <Loading />;
   }
 
   return (
-    <div className="h-screen bg-gray-100 overflow-y-auto">
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/login" element={<Suspense fallback={<Loading />}><Login /></Suspense>} />
-        <Route path="/register" element={<Suspense fallback={<Loading />}><Register /></Suspense>} />
-
-        {/* Role-Based Routes */}
-        <Route
-          path="/"
-          element={
-            role === 'Committee Member' ? (
-              <Navigate to="/home" CommitteeDashboard />
-            ) : (
-              <Navigate to="/resident-dashboard" ResidentDashboard />
-            )
-          }
-        />
-        <Route
-          path="/home"
-          element={
-            <Suspense fallback={<Loading />}>
-              {role === 'Committee Member' ? <Home /> : <Navigate to="/resident-dashboard" CommitteeDashboard />}
-            </Suspense>
-          }
-        />
-        <Route
-          path="/resident-dashboard"
-          element={
-            <Suspense fallback={<Loading />}>
-              {role === 'Resident' ? <ResidentDashboard /> : <Navigate to="/home" ResidentDashboard  />}
-            </Suspense>
-          }
-        />
-        <Route
-          path="/committee-dashboard"
-          element={
-            <Suspense fallback={<Loading />}>
-              {role === 'Committee Member' ? <CommitteeDashboard /> : <Navigate to="/resident-dashboard" CommitteeDashboard  />}
-            </Suspense>
-          }
-        />
-        <Route
-          path="/maintenance"
-          element={
-            <Suspense fallback={<Loading />}>
-              {role === 'Committee Member' ? <Maintenance /> : <Navigate to="/resident-dashboard" Maintenance />}
-            </Suspense>
-          }
-        />
-        <Route
-          path="/members"
-          element={
-            <Suspense fallback={<Loading />}>
-              {role === 'Committee Member' ? <Members /> : <Navigate to="/resident-dashboard" replace />}
-            </Suspense>
-          }
-        />
-        <Route
-          path="/billing"
-          element={
-            <Suspense fallback={<Loading />}>
-              <Billing />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/events"
-          element={
-            <Suspense fallback={<Loading />}>
-              <Events />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/complaints"
-          element={
-            <Suspense fallback={<Loading />}>
-              <Complaints />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/create-notice"
-          element={
-            <Suspense fallback={<Loading />}>
-              {role === 'Committee Member' ? <CreateNotice /> : <Navigate to="/resident-dashboard" replace />}
-            </Suspense>
-          }
-        />
-        <Route
-          path="/notice/:noticeId"
-          element={
-            <Suspense fallback={<Loading />}>
-              <NoticeDetails />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/create-new-bill"
-          element={
-            <Suspense fallback={<Loading />}>
-              {role === 'Committee Member' ? <CreateNewBill /> : <Navigate to="/billing" replace />}
-            </Suspense>
-          }
-        />
-        <Route
-          path="/file-complaint"
-          element={
-            <Suspense fallback={<Loading />}>
-              {role === 'Resident' ? <FileComplaint /> : <Navigate to="/complaints" replace />}
-            </Suspense>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <Suspense fallback={<Loading />}>
-              <Profile />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/complaint/:complaintId"
-          element={
-            <Suspense fallback={<Loading />}>
-              <ComplaintDetails />
-            </Suspense>
-          }
-        />
-        <Route path="*" element={<Navigate to={role === 'Committee Member' ? '/home' : '/resident-dashboard'} replace />} />
-      </Routes>
+    <div className="min-h-screen bg-gray-100 overflow-y-auto">
+      <Suspense fallback={<Loading />}>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route
+            path="/"
+            element={
+              role === 'Committee Member' ? (
+                <Navigate to="/home" replace />
+              ) : (
+                <Navigate to="/resident-dashboard" replace />
+              )
+            }
+          />
+          <Route
+            path="/home"
+            element={role === 'Committee Member' ? <Home /> : <Navigate to="/resident-dashboard" replace />}
+          />
+          <Route
+            path="/resident-dashboard"
+            element={role === 'Resident' ? <ResidentDashboard /> : <Navigate to="/home" replace />}
+          />
+          <Route
+            path="/maintenance"
+            element={role === 'Committee Member' ? <Maintenance /> : <Navigate to="/resident-dashboard" replace />}
+          />
+          <Route
+            path="/members"
+            element={role === 'Committee Member' ? <Members /> : <Navigate to="/resident-dashboard" replace />}
+          />
+          <Route
+            path="/billing"
+            element={role === 'Committee Member' ? <Billing /> : <Navigate to="/resident-dashboard" replace />}
+          />
+          <Route path="/events" element={<Events />} />
+          <Route path="/complaints" element={<Complaints />} />
+          <Route
+            path="/create-notice"
+            element={role === 'Committee Member' ? <CreateNotice /> : <Navigate to="/resident-dashboard" replace />}
+          />
+          <Route path="/notice/:noticeId" element={<NoticeDetails />} />
+          <Route
+            path="/create-new-bill"
+            element={role === 'Committee Member' ? <CreateNewBill /> : <Navigate to="/billing" replace />}
+          />
+          <Route
+            path="/file-complaint"
+            element={role === 'Resident' ? <FileComplaint /> : <Navigate to="/complaints" replace />}
+          />
+          <Route path="/profile" element={<Profile />} />
+          <Route
+            path="/resident-billing"
+            element={role === 'Resident' ? <ResidentBilling /> : <Navigate to="/resident-billing" replace />}
+          />
+          <Route
+            path="*"
+            element={<Navigate to={role === 'Committee Member' ? '/home' : '/resident-dashboard'} replace />}
+          />
+        </Routes>
+      </Suspense>
     </div>
   );
 }
@@ -213,8 +160,10 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <Router> {/* Router moved here */}
-        <AppContent />
+      <Router>
+        <ErrorBoundary>
+          <AppContent />
+        </ErrorBoundary>
       </Router>
     </AuthProvider>
   );

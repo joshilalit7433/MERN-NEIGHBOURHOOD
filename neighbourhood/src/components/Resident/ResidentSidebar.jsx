@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { auth } from '../firebaseConfig';
+import { auth } from '@/firebaseConfig.js';
 import { signOut } from 'firebase/auth';
 import {
   LayoutDashboard,
@@ -7,7 +7,7 @@ import {
   FileText,
   DollarSign,
   Calendar,
-} from 'lucide-react'; // Import Lucide React icons relevant to residents
+} from 'lucide-react';
 
 export default function ResidentSidebar({ handleLogout }) {
   const navigate = useNavigate();
@@ -15,27 +15,27 @@ export default function ResidentSidebar({ handleLogout }) {
   const sidebarLinks = [
     {
       name: 'Dashboard',
-      icon: <LayoutDashboard className="text-purple-400" />, // Purple for Dashboard
-      path: '/resident-dashboard', // Adjust path as needed for resident dashboard
+      icon: <LayoutDashboard className="text-purple-400" />,
+      path: '/resident-dashboard',
     },
     {
       name: 'Profile',
-      icon: <User className="text-green-400" />, // Green for Profile
+      icon: <User className="text-green-400" />,
       path: '/profile',
     },
     {
       name: 'Complaints',
-      icon: <FileText className="text-blue-400" />, // Blue for Complaints
+      icon: <FileText className="text-blue-400" />,
       path: '/complaints',
     },
     {
       name: 'Billing',
-      icon: <DollarSign className="text-yellow-400" />, // Yellow for Billing
-      path: '/billing',
+      icon: <DollarSign className="text-yellow-400" />,
+      path: '/resident-billing',
     },
     {
       name: 'Events and Notices',
-      icon: <Calendar className="text-pink-400" />, // Pink for Events and Notices
+      icon: <Calendar className="text-pink-400" />,
       path: '/events',
     },
   ];

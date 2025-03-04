@@ -55,9 +55,9 @@ export default function Login({ setIsAuthenticated }) {
 
         // Redirect based on role
         if (userRole === 'Resident') {
-          navigate('/resident-dashboard');
+          navigate('/resident-dashboard'); // Navigate to ResidentDashboard for residents
         } else if (userRole === 'Committee Member') {
-          navigate('/home');
+          navigate('/home'); // Navigate to Home for committee members
         } else {
           throw new Error('Unknown user role. Please contact support.');
         }
