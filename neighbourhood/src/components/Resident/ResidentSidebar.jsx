@@ -1,42 +1,50 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { auth } from '@/firebaseConfig.js';
-import { signOut } from 'firebase/auth';
+// src/components/Resident/ResidentSidebar.jsx
+import React, { useContext } from "react"; // Added useContext for consistency with other components
+import { Link, useNavigate } from "react-router-dom";
+import { AuthContext } from "../../AuthContext.jsx"; // Import for potential future use (adjust path as needed)
+import { auth } from "../../firebaseConfig.js"; // Adjusted path to match your project structure
+import { signOut } from "firebase/auth";
 import {
   LayoutDashboard,
   User,
   FileText,
   DollarSign,
   Calendar,
-} from 'lucide-react';
+} from "lucide-react";
 
 export default function ResidentSidebar({ handleLogout }) {
   const navigate = useNavigate();
 
   const sidebarLinks = [
     {
-      name: 'Dashboard',
+      name: "Dashboard",
       icon: <LayoutDashboard className="text-purple-400" />,
-      path: '/resident-dashboard',
+      path: "/resident-dashboard",
     },
     {
-      name: 'Profile',
+      name: "Profile",
       icon: <User className="text-green-400" />,
-      path: '/profile',
+      path: "/resident-profile", // Updated from "/ResidentProfile" to lowercase with hyphen
     },
     {
-      name: 'Complaints',
+      name: "Complaints",
       icon: <FileText className="text-blue-400" />,
-      path: '/complaints',
+      path: "/resident-complaints", // Updated from "/ResidentComplaints" to lowercase with hyphen
     },
     {
-      name: 'Billing',
+      name: "File Complaint",
+      icon: <FileText className="text-blue-400" />, // Using FileText icon for consistency with Complaints
+      path: "/file-complaint", // New link for filing complaints
+    },
+    {
+      name: "Billing",
       icon: <DollarSign className="text-yellow-400" />,
-      path: '/resident-billing',
+      path: "/resident-billing",
     },
     {
-      name: 'Events and Notices',
+      name: "Events and Notices",
       icon: <Calendar className="text-pink-400" />,
-      path: '/events',
+      path: "/resident-notice", // Updated from "/ResidentNotice" to lowercase with hyphen
     },
   ];
 
@@ -45,8 +53,8 @@ export default function ResidentSidebar({ handleLogout }) {
       await signOut(auth);
       handleLogout(); // Call the parent handleLogout to update authentication state
     } catch (error) {
-      console.error('Logout error:', error);
-      navigate('/login');
+      console.error("Logout error:", error);
+      navigate("/login");
     }
   };
 
@@ -64,7 +72,7 @@ export default function ResidentSidebar({ handleLogout }) {
             key={link.name}
             to={link.path}
             className={`flex items-center p-3 rounded-lg hover:bg-gray-700 transition-colors ${
-              window.location.pathname === link.path ? 'bg-gray-700' : ''
+              window.location.pathname === link.path ? "bg-gray-700" : ""
             }`}
           >
             <span className="text-xl">{link.icon}</span>

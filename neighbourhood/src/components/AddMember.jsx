@@ -1,9 +1,9 @@
 "use client"; // Mark as a Client Component since we use useState and Firebase hooks
 
 import React, { useState } from "react";
-import { auth, database } from "../../lib/FirebaseConfig"; // Adjusted for your structure
+import { auth, database } from "../firebaseConfig"; // Adjusted for your structure
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { ref, set } from "firebase/database";
+import { ref, set } from "firebase/firestore";
 
 export default function Register() {
   const [formData, setFormData] = useState({

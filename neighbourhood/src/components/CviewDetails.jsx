@@ -1,95 +1,126 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../AuthContext.jsx'; // Adjust the path to match your project structure
-import { firestore } from '../firebaseConfig'; // Adjust the path to your Firebase config
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+// src/components/ViewDetails.jsx
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom"; // Added Link for consistency
+import { useAuth } from "../AuthContext.jsx"; // Adjust path as needed
+import { firestore } from "../firebaseConfig.js"; // Adjust path as needed
+import { doc, getDoc } from "firebase/firestore"; // Removed updateDoc since we’re only viewing
 
-export default function ComplaintDetails() {
-  const { complaintId } = useParams(); // Get the complaint ID from the URL parameter
-  const { user, loading } = useAuth(); // Use auth context for user data
+export default function ViewDetails() {
+  const { id } = useParams(); // Get the ID from the URL
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [complaint, setComplaint] = useState(null); // State for complaint data
-  const [error, setError] = useState(null); // Error state
-  const [selectedStatus, setSelectedStatus] = useState(''); // State for selected status
-  const [formSuccess, setFormSuccess] = useState(null); // Success state for popup
+  const [details, setDetails] = useState(null);
+  const [creatorName, setCreatorName] = useState("Unknown"); // State for creator's name
+  const [error, setError] = useState(null);
+  const [resourceType, setResourceType] = useState(null); // To determine if it's a complaint or notice
 
   useEffect(() => {
     if (loading) return;
 
     if (!user) {
-      navigate('/register'); // Redirect to register if not authenticated
+      navigate("/login"); // Redirect to login for unauthenticated users
       return;
     }
 
-    const fetchComplaint = async () => {
+    if (!id || typeof id !== "string") {
+      setError("Invalid resource ID.");
+      return;
+    }
+
+    const fetchDetailsAndCreator = async () => {
       try {
-        const complaintRef = doc(firestore, 'complaints', complaintId);
+        // Try fetching as a complaint first
+        const complaintRef = doc(firestore, "complaints", id);
         const complaintDoc = await getDoc(complaintRef);
 
         if (complaintDoc.exists()) {
-          const data = complaintDoc.data();
-          setComplaint({
-            id: complaintDoc.id,
-            name: data.name || 'Anonymous',
-            description: data.description || 'No issue provided',
-            status: data.status || 'Pending',
-            createdAt: data.createdAt,
-          });
-          setSelectedStatus(data.status || 'Pending'); // Initialize selected status with current status
-        } else {
-          setError('Complaint not found.');
+          setResourceType("complaint");
+          const complaintData = complaintDoc.data();
+          setDetails(complaintData);
+
+          // Fetch the creator's name from the users collection using createdBy (UID)
+          if (complaintData.createdBy) {
+            console.log(
+              "Fetching creator for complaint, UID:",
+              complaintData.createdBy
+            );
+            const userRef = doc(firestore, "users", complaintData.createdBy);
+            const userDoc = await getDoc(userRef);
+
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              console.log("User data for creator:", userData);
+              setCreatorName(userData.name || "Unknown"); // Use the user's name or default to "Unknown"
+            } else {
+              console.log(
+                "User document not found for UID:",
+                complaintData.createdBy
+              );
+              setCreatorName("Unknown"); // If user doc doesn't exist
+            }
+          } else {
+            console.log("No createdBy field in complaint data");
+            setCreatorName("Unknown");
+          }
+          return;
         }
+
+        // If not a complaint, try fetching as a notice
+        const noticeRef = doc(firestore, "notices", id);
+        const noticeDoc = await getDoc(noticeRef);
+
+        if (noticeDoc.exists()) {
+          setResourceType("notice");
+          const noticeData = noticeDoc.data();
+          setDetails(noticeData);
+
+          // Fetch the creator's name from the users collection using createdBy (UID)
+          if (noticeData.createdBy) {
+            console.log(
+              "Fetching creator for notice, UID:",
+              noticeData.createdBy
+            );
+            const userRef = doc(firestore, "users", noticeData.createdBy);
+            const userDoc = await getDoc(userRef);
+
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              console.log("User data for creator:", userData);
+              setCreatorName(userData.name || "Unknown"); // Use the user's name or default to "Unknown"
+            } else {
+              console.log(
+                "User document not found for UID:",
+                noticeData.createdBy
+              );
+              setCreatorName("Unknown"); // If user doc doesn't exist
+            }
+          } else {
+            console.log("No createdBy field in notice data");
+            setCreatorName("Unknown");
+          }
+          return;
+        }
+
+        setError("Resource not found.");
       } catch (err) {
-        console.error('Error fetching complaint:', err);
-        setError('Failed to fetch complaint details. Please try again.');
+        console.error("Error fetching details or creator:", err);
+        setError("Failed to fetch resource details. Please try again.");
       }
     };
 
-    fetchComplaint();
-  }, [complaintId, user, loading, navigate]);
-
-  const handleStatusChange = (status) => {
-    setSelectedStatus(status); // Update the selected status in state
-  };
-
-  const handleSubmitStatus = async () => {
-    if (!selectedStatus) {
-      setError('Please select a status before submitting.');
-      return;
-    }
-
-    try {
-      const complaintRef = doc(firestore, 'complaints', complaintId);
-      await updateDoc(complaintRef, { status: selectedStatus });
-      
-      // Update local state to reflect the new status
-      setComplaint(prev => ({
-        ...prev,
-        status: selectedStatus,
-      }));
-      
-      // Show success popup and redirect to Complaints page
-      setFormSuccess('Status updated successfully!');
-      alert('Status updated successfully!'); // Simple alert as a popup (you can replace with a modal)
-      
-      // Redirect back to Complaints page after a short delay (e.g., 1 second)
-      setTimeout(() => {
-        navigate('/complaints');
-      }, 1000);
-      
-      setError(null);
-    } catch (err) {
-      console.error('Error updating complaint status:', err);
-      setError('Failed to update complaint status. Please try again.');
-    }
-  };
+    fetchDetailsAndCreator();
+  }, [id, user, loading, navigate]);
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-gray-50">Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        Loading...
+      </div>
+    );
   }
 
   if (!user) {
-    return null; // Redirect handled via navigate in useEffect
+    return null;
   }
 
   if (error) {
@@ -100,78 +131,108 @@ export default function ComplaintDetails() {
     );
   }
 
-  if (!complaint) {
-    return <div className="min-h-screen flex items-center justify-center bg-gray-50">Loading complaint...</div>;
+  if (!details) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        Loading resource...
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="border-2 border-black rounded-lg p-6 max-w-2xl mx-auto bg-white shadow-lg">
-        <h1 className="text-2xl font-bold mb-6">Complaint Details</h1>
-        <div className="space-y-4 font-cursive">
-          <p className="text-gray-800"><strong>Member:</strong> {complaint.name || 'Anonymous'}</p>
-          <p className="text-gray-800"><strong>Issue:</strong> {complaint.description || 'No issue provided'}</p>
-          <p className="text-gray-800"><strong>Current Status:</strong> 
-            <span
-              className={`font-semibold ml-2 ${
-                complaint.status === "Pending"
-                  ? "text-red-600"
-                  : complaint.status === "In Progress"
-                  ? "text-yellow-600"
-                  : "text-green-600"
-              }`}
-            >
-              {complaint.status}
-            </span>
-          </p>
-          <p className="text-gray-600"><strong>Created At:</strong> {complaint.createdAt?.toDate().toLocaleString() || 'Unknown'}</p>
-
-          {/* Status Update Section */}
-          <div className="mt-4">
-            <h3 className="text-lg font-semibold mb-2">Update Status</h3>
-            <div className="flex space-x-2 mb-4">
-              <button
-                onClick={() => handleStatusChange('Pending')}
-                className={`px-3 py-1 border border-black rounded-md ${
-                  selectedStatus === 'Pending' ? 'bg-red-200 text-red-800' : 'bg-white hover:bg-gray-100'
-                } transition`}
-              >
-                Pending
-              </button>
-              <button
-                onClick={() => handleStatusChange('In Progress')}
-                className={`px-3 py-1 border border-black rounded-md ${
-                  selectedStatus === 'In Progress' ? 'bg-yellow-200 text-yellow-800' : 'bg-white hover:bg-gray-100'
-                } transition`}
-              >
-                In Progress
-              </button>
-              <button
-                onClick={() => handleStatusChange('Done')}
-                className={`px-3 py-1 border border-black rounded-md ${
-                  selectedStatus === 'Done' ? 'bg-green-200 text-green-800' : 'bg-white hover:bg-gray-100'
-                } transition`}
-              >
-                Done
-              </button>
-            </div>
-            <button
-              onClick={handleSubmitStatus}
-              className="px-4 py-2 bg-white border-2 border-black rounded-md hover:bg-gray-100 transition font-cursive"
-            >
-              Submit
-            </button>
-            {formSuccess && (
-              <p className="mt-2 text-green-500 text-center">{formSuccess}</p>
+    <div className="flex min-h-screen bg-gray-50">
+      <div className="flex-grow p-6 lg:ml-64">
+        <div className="border-2 border-gray-300 rounded-lg p-6 max-w-2xl mx-auto bg-white shadow-lg">
+          <h1 className="text-2xl font-bold mb-6">
+            {resourceType === "complaint"
+              ? "Complaint Details"
+              : "Notice Details"}
+          </h1>
+          <div className="space-y-4 font-cursive">
+            {resourceType === "complaint" ? (
+              <>
+                <p className="text-gray-800">
+                  <strong>Member:</strong> {details.name || "Anonymous"}
+                </p>
+                <p className="text-gray-800">
+                  <strong>Issue:</strong>{" "}
+                  {details.description || "No issue provided"}
+                </p>
+                <p className="text-gray-800">
+                  <strong>Flat Number:</strong>{" "}
+                  {details.flatNo || "Not provided"} {/* Updated to flatNo */}
+                </p>
+                <p className="text-gray-800">
+                  <strong>Current Status:</strong>
+                  <span
+                    className={`font-semibold ml-2 ${
+                      details.status === "Pending"
+                        ? "text-red-600"
+                        : details.status === "In Progress"
+                        ? "text-yellow-600"
+                        : "text-green-600"
+                    }`}
+                  >
+                    {details.status}
+                  </span>
+                </p>
+                <p className="text-gray-600">
+                  <strong>Created At:</strong>{" "}
+                  {new Date(details.createdAt?.toDate()).toLocaleString(
+                    "en-US",
+                    {
+                      day: "numeric",
+                      month: "numeric",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: true,
+                    }
+                  )}
+                </p>
+                <p className="text-gray-600">
+                  <strong>Created By:</strong> {creatorName}{" "}
+                  {/* Display the creator's name */}
+                </p>
+                {/* Reply Section (view-only, only for complaints if reply exists) */}
+                {details.reply && (
+                  <p className="text-gray-800">
+                    <strong>Reply:</strong> {details.reply}
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="text-gray-800">
+                  <strong>Title:</strong> {details.title || "No title provided"}
+                </p>
+                <p className="text-gray-800">
+                  <strong>Date:</strong> {details.date || "Not provided"}
+                </p>
+                <p className="text-gray-800">
+                  <strong>Time:</strong> {details.time || "Not provided"}
+                </p>
+                <p className="text-gray-600">
+                  <strong>Description:</strong>{" "}
+                  {details.description || "No description provided"}
+                </p>
+                <p className="text-gray-600">
+                  <strong>Created By:</strong> {creatorName}{" "}
+                  {/* Display the creator's name */}
+                </p>
+              </>
             )}
+            <Link
+              to={
+                resourceType === "complaint"
+                  ? "/complaints"
+                  : "/resident-notice"
+              }
+              className="mt-4 px-4 py-2 bg-white border-2 border-black rounded-md hover:bg-gray-100 transition font-cursive"
+            >
+              Back to List
+            </Link>
           </div>
-
-          <button
-            onClick={() => navigate('/complaints')} // Back to Complaints page
-            className="mt-4 px-4 py-2 bg-white border-2 border-black rounded-md hover:bg-gray-100 transition font-cursive"
-          >
-            Back to Complaints
-          </button>
         </div>
       </div>
     </div>

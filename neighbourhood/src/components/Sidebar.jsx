@@ -1,4 +1,7 @@
-import { Link, useNavigate } from "react-router-dom";
+// src/components/Sidebar.jsx
+import React, { useContext } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { AuthContext } from "../AuthContext.jsx"; // Corrected import path
 import { auth } from "../firebaseConfig";
 import { signOut } from "firebase/auth";
 import {
@@ -11,51 +14,68 @@ import {
   User, // Import User icon for Profile
 } from "lucide-react"; // Import Lucide React icons
 
-export default function Sidebar({ handleLogout }) {
+export default function Sidebar() {
+  const { user, setUser } = useContext(AuthContext); // Access user and setUser from AuthContext
   const navigate = useNavigate();
+  const location = useLocation();
+  const role = user && user.role ? user.role : null; // Get role, default to null if undefined
+  console.log("Sidebar role:", role, "User:", user); // Debug log
 
+  // Define sidebar links based on role
   const sidebarLinks = [
     {
       name: "Dashboard",
       icon: <LayoutDashboard className="text-purple-400" />,
-      path: "/home",
+      path: role === "Committee Member" ? "/home" : "/resident-dashboard",
     },
     {
       name: "Members",
       icon: <Users className="text-purple-400" />,
       path: "/members",
+      roles: ["Committee Member"], // Only for Committee Members
     },
     {
       name: "Add Member",
       icon: <UserPlus className="text-purple-400" />,
       path: "/register",
+      roles: ["Committee Member"], // Only for Committee Members
     },
     {
       name: "Billing",
-      icon: <DollarSign className="text-yellow-400" />,
-      path: "/billing",
+      icon: <DollarSign className="text-yellow-400" />, // Now shown for all users
+      path: role === "Committee Member" ? "/billing" : "/resident-billing",
     },
+    ...(role === "Committee Member"
+      ? [
+          {
+            name: "Complaints",
+            icon: <FileText className="text-blue-400" />,
+            path: "/complaints",
+          },
+          {
+            name: "File Complaint",
+            icon: <FileText className="text-blue-400" />, // Using FileText for consistency
+            path: "/file-complaint",
+          },
+        ]
+      : []),
     {
       name: "Events and Notices",
       icon: <Calendar className="text-pink-400" />,
       path: "/events",
     },
     {
-      name: "Complaints",
-      icon: <FileText className="text-blue-400" />,
-      path: "/complaints",
-    },
-    {
       name: "Profile",
-      icon: <User className="text-green-400" />, // Added Profile icon
-      path: "/profile",
+      icon: <User className="text-green-400" />,
+      path: role === "Committee Member" ? "/profile" : "/resident-profile",
     },
   ];
 
   const onLogout = async () => {
     try {
       await signOut(auth);
-      handleLogout(); // Call the parent handleLogout to update authentication state
+      setUser(null); // Update AuthContext to clear user state
+      navigate("/login");
     } catch (error) {
       console.error("Logout error:", error);
       navigate("/login");
@@ -71,18 +91,23 @@ export default function Sidebar({ handleLogout }) {
 
       {/* Navigation Links */}
       <div className="space-y-2">
-        {sidebarLinks.map((link) => (
-          <Link
-            key={link.name}
-            to={link.path}
-            className={`flex items-center p-3 rounded-lg hover:bg-gray-700 transition-colors ${
-              window.location.pathname === link.path ? "bg-gray-700" : ""
-            }`}
-          >
-            <span className="text-xl">{link.icon}</span>
-            <span className="ml-3 text-sm font-medium">{link.name}</span>
-          </Link>
-        ))}
+        {sidebarLinks.map((link) => {
+          // Filter links based on role (if roles array is specified)
+          if (link.roles && !link.roles.includes(role)) return null;
+
+          return (
+            <Link
+              key={link.name}
+              to={link.path}
+              className={`flex items-center p-3 rounded-lg hover:bg-gray-700 transition-colors ${
+                location.pathname === link.path ? "bg-gray-700" : ""
+              }`}
+            >
+              <span className="text-xl">{link.icon}</span>
+              <span className="ml-3 text-sm font-medium">{link.name}</span>
+            </Link>
+          );
+        })}
       </div>
 
       {/* Logout Button */}
