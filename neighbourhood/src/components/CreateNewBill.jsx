@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext.jsx'; // Adjust path (note: corrected from 'Authcontext' to 'AuthContext')
+import Sidebar from '../components/Sidebar'; // Import Sidebar component
 
 export default function CreateNewBill() {
   const { user, loading } = useAuth();
@@ -147,84 +148,89 @@ export default function CreateNewBill() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-md mx-auto border-2 border-black rounded-lg p-6 bg-white">
-        <h1 className="text-2xl font-bold mb-6 font-cursive">CREATE NEW BILL</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="memberName" className="block text-sm font-medium text-gray-700 font-cursive">
-              Member NAME
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                id="memberName"
-                name="memberName"
-                value={searchQuery || formData.memberName}
-                onChange={handleSearchChange}
-                className="mt-1 block w-full border-2 border-black rounded-md p-2 font-cursive focus:outline-none focus:ring-0"
-                placeholder="Search member..."
-              />
-              {searchResults.length > 0 && (
-                <ul className="absolute z-10 w-full bg-white border-2 border-black rounded-md mt-1 max-h-40 overflow-y-auto shadow-lg">
-                  {searchResults.map((member) => (
-                    <li
-                      key={member.id}
-                      onClick={() => handleSelectMember(member)}
-                      className="p-2 cursor-pointer hover:bg-gray-100 font-cursive"
-                    >
-                      {member.name} (Flat: {member.flat}, Contact: {member.contact})
-                    </li>
-                  ))}
-                </ul>
-              )}
+    <div className="flex min-h-screen bg-gray-50">
+      {/* Sidebar Component */}
+      <Sidebar />
+
+      <div className="flex-grow p-6 lg:ml-64">
+        <div className="max-w-md mx-auto border-2 border-black rounded-lg p-6 bg-white">
+          <h1 className="text-2xl font-bold mb-6 font-cursive">CREATE NEW BILL</h1>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="memberName" className="block text-sm font-medium text-gray-700 font-cursive">
+                Member NAME
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  id="memberName"
+                  name="memberName"
+                  value={searchQuery || formData.memberName}
+                  onChange={handleSearchChange}
+                  className="mt-1 block w-full border-2 border-black rounded-md p-2 font-cursive focus:outline-none focus:ring-0"
+                  placeholder="Search member..."
+                />
+                {searchResults.length > 0 && (
+                  <ul className="absolute z-10 w-full bg-white border-2 border-black rounded-md mt-1 max-h-40 overflow-y-auto shadow-lg">
+                    {searchResults.map((member) => (
+                      <li
+                        key={member.id}
+                        onClick={() => handleSelectMember(member)}
+                        className="p-2 cursor-pointer hover:bg-gray-100 font-cursive"
+                      >
+                        {member.name} (Flat: {member.flat}, Contact: {member.contact})
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
-          </div>
-          <div>
-            <label htmlFor="amount" className="block text-sm font-medium text-gray-700 font-cursive">
-              AMOUNT
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-cursive">₹</span>
+            <div>
+              <label htmlFor="amount" className="block text-sm font-medium text-gray-700 font-cursive">
+                AMOUNT
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-cursive">₹</span>
+                <input
+                  type="number"
+                  id="amount"
+                  name="amount"
+                  value={formData.amount}
+                  onChange={handleChange}
+                  className="mt-1 block w-full border-2 border-black rounded-md p-2 pl-8 font-cursive focus:outline-none focus:ring-0"
+                  placeholder="Enter amount"
+                  step="0.01"
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 font-cursive">
+                Due Date
+              </label>
               <input
-                type="number"
-                id="amount"
-                name="amount"
-                value={formData.amount}
+                type="date"
+                id="dueDate"
+                name="dueDate"
+                value={formData.dueDate}
                 onChange={handleChange}
-                className="mt-1 block w-full border-2 border-black rounded-md p-2 pl-8 font-cursive focus:outline-none focus:ring-0"
-                placeholder="Enter amount"
-                step="0.01"
+                className="mt-1 block w-full border-2 border-black rounded-md p-2 font-cursive focus:outline-none focus:ring-0"
                 required
               />
             </div>
-          </div>
-          <div>
-            <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 font-cursive">
-              Due Date
-            </label>
-            <input
-              type="date"
-              id="dueDate"
-              name="dueDate"
-              value={formData.dueDate}
-              onChange={handleChange}
-              className="mt-1 block w-full border-2 border-black rounded-md p-2 font-cursive focus:outline-none focus:ring-0"
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            className="mt-4 px-6 py-2 bg-blue-500 text-white border-2 border-black rounded-md font-cursive hover:bg-blue-600 transition"
-          >
-            SUBMIT
-          </button>
-        </form>
-        {(success || error) && (
-          <p className={`text-center mt-4 ${success ? 'text-green-500' : 'text-red-500'}`}>
-            {success || error}
-          </p>
-        )}
+            <button
+              type="submit"
+              className="mt-4 px-6 py-2 bg-blue-500 text-white border-2 border-black rounded-md font-cursive hover:bg-blue-600 transition"
+            >
+              SUBMIT
+            </button>
+          </form>
+          {(success || error) && (
+            <p className={`text-center mt-4 ${success ? 'text-green-500' : 'text-red-500'}`}>
+              {success || error}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -214,10 +214,10 @@ export default function Register({ setIsAuthenticated }) {
                 <label className="inline-flex items-center">
                   <input
                     type="radio"
-                    id="resident"
+                    id="Resident"
                     name="role"
-                    value="resident"
-                    checked={formData.role === "resident"}
+                    value="Resident"
+                    checked={formData.role === "Resident"}
                     onChange={handleChange}
                     className="form-radio text-indigo-600"
                   />
@@ -226,14 +226,14 @@ export default function Register({ setIsAuthenticated }) {
                 <label className="inline-flex items-center">
                   <input
                     type="radio"
-                    id="member"
+                    id="Committee Member"
                     name="role"
-                    value="member"
-                    checked={formData.role === "member"}
+                    value="Committee Member"
+                    checked={formData.role === "Committee Member"}
                     onChange={handleChange}
                     className="form-radio text-indigo-600"
                   />
-                  <span className="ml-2">Member</span>
+                  <span className="ml-2">Committee Member</span>
                 </label>
               </div>
             </div>

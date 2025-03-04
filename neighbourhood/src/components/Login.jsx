@@ -1,17 +1,21 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate for redirection
-import { auth } from "../firebaseConfig"; // Adjust the path
-import { signInWithEmailAndPassword } from "firebase/auth";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate for redirection
+import { auth } from '../firebaseConfig'; // Adjust the path
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { useAuth } from '../AuthContext.jsx'; // Import useAuth for authentication state
+import { firestore } from '../firebaseConfig'; // Import firestore for role fetching
+import { doc, getDoc } from 'firebase/firestore'; // Import Firestore functions
 
 export default function Login({ setIsAuthenticated }) {
   const [formData, setFormData] = useState({
-    email: "",
-    password: "",
+    email: '',
+    password: '',
   });
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate(); // Hook for navigation
+  const { user } = useAuth(); // Get user from AuthContext (optional for role checking)
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -28,7 +32,7 @@ export default function Login({ setIsAuthenticated }) {
     setLoading(true);
 
     try {
-      console.log("Attempting to log in with email:", formData.email);
+      console.log('Attempting to log in with email:', formData.email);
 
       // Sign in user with email and password
       const userCredential = await signInWithEmailAndPassword(
@@ -37,25 +41,42 @@ export default function Login({ setIsAuthenticated }) {
         formData.password
       );
 
-      const user = userCredential.user;
+      const firebaseUser = userCredential.user;
+      console.log('User logged in with UID:', firebaseUser.uid);
 
-      console.log("User logged in with UID:", user.uid);
+      // Fetch user role from Firestore
+      const userDocRef = doc(firestore, 'users', firebaseUser.uid);
+      const userDoc = await getDoc(userDocRef);
 
-      setSuccess("Logged in successfully!");
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const userRole = userData.role || 'Resident'; // Default to 'Resident' if role not found
+        console.log('User role:', userRole);
+
+        // Redirect based on role
+        if (userRole === 'Resident') {
+          navigate('/resident-dashboard');
+        } else if (userRole === 'Committee Member') {
+          navigate('/home');
+        } else {
+          throw new Error('Unknown user role. Please contact support.');
+        }
+      } else {
+        throw new Error('User profile not found in Firestore. Please register or contact support.');
+      }
+
+      setSuccess('Logged in successfully!');
       setFormData({
-        email: "",
-        password: "",
+        email: '',
+        password: '',
       });
 
       if (setIsAuthenticated) {
         setIsAuthenticated(true); // Update authentication state
       }
-
-      // Redirect to /home after successful login
-      navigate("/home");
     } catch (error) {
-      console.error("Login error:", error);
-      setError(error.message || "An error occurred during login.");
+      console.error('Login error:', error);
+      setError(error.message || 'An error occurred during login.');
     } finally {
       setLoading(false);
     }
@@ -114,12 +135,12 @@ export default function Login({ setIsAuthenticated }) {
               type="submit"
               disabled={loading}
               className={`mt-4 px-4 py-2 ${
-                loading ? "bg-gray-400" : "bg-indigo-600"
+                loading ? 'bg-gray-400' : 'bg-indigo-600'
               } text-white rounded-md hover:${
-                loading ? "" : "bg-indigo-700"
+                loading ? '' : 'bg-indigo-700'
               } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
             >
-              {loading ? "Logging in..." : "Login"}
+              {loading ? 'Logging in...' : 'Login'}
             </button>
           </div>
         </form>

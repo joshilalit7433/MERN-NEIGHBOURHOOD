@@ -1,54 +1,42 @@
-import { Link, useNavigate } from "react-router-dom";
-import { auth } from "../firebaseConfig";
-import { signOut } from "firebase/auth";
+import { Link, useNavigate } from 'react-router-dom';
+import { auth } from '../firebaseConfig';
+import { signOut } from 'firebase/auth';
 import {
   LayoutDashboard,
-  Users,
-  UserPlus,
+  User,
+  FileText,
   DollarSign,
   Calendar,
-  FileText,
-  User, // Import User icon for Profile
-} from "lucide-react"; // Import Lucide React icons
+} from 'lucide-react'; // Import Lucide React icons relevant to residents
 
-export default function Sidebar({ handleLogout }) {
+export default function ResidentSidebar({ handleLogout }) {
   const navigate = useNavigate();
 
   const sidebarLinks = [
     {
-      name: "Dashboard",
-      icon: <LayoutDashboard className="text-purple-400" />,
-      path: "/home",
+      name: 'Dashboard',
+      icon: <LayoutDashboard className="text-purple-400" />, // Purple for Dashboard
+      path: '/resident-dashboard', // Adjust path as needed for resident dashboard
     },
     {
-      name: "Members",
-      icon: <Users className="text-purple-400" />,
-      path: "/members",
+      name: 'Profile',
+      icon: <User className="text-green-400" />, // Green for Profile
+      path: '/profile',
     },
     {
-      name: "Add Member",
-      icon: <UserPlus className="text-purple-400" />,
-      path: "/register",
+      name: 'Complaints',
+      icon: <FileText className="text-blue-400" />, // Blue for Complaints
+      path: '/complaints',
     },
     {
-      name: "Billing",
-      icon: <DollarSign className="text-yellow-400" />,
-      path: "/billing",
+      name: 'Billing',
+      icon: <DollarSign className="text-yellow-400" />, // Yellow for Billing
+      path: '/billing',
     },
     {
-      name: "Events and Notices",
-      icon: <Calendar className="text-pink-400" />,
-      path: "/events",
-    },
-    {
-      name: "Complaints",
-      icon: <FileText className="text-blue-400" />,
-      path: "/complaints",
-    },
-    {
-      name: "Profile",
-      icon: <User className="text-green-400" />, // Added Profile icon
-      path: "/profile",
+      name: 'Events and Notices',
+      icon: <Calendar className="text-pink-400" />, // Pink for Events and Notices
+      path: '/events',
     },
   ];
 
@@ -57,8 +45,8 @@ export default function Sidebar({ handleLogout }) {
       await signOut(auth);
       handleLogout(); // Call the parent handleLogout to update authentication state
     } catch (error) {
-      console.error("Logout error:", error);
-      navigate("/login");
+      console.error('Logout error:', error);
+      navigate('/login');
     }
   };
 
@@ -66,7 +54,7 @@ export default function Sidebar({ handleLogout }) {
     <div className="fixed h-screen bg-[#1f2a44] shadow-lg w-64 text-white overflow-hidden">
       {/* Logo/Title */}
       <div className="mb-8 p-4">
-        <h1 className="text-2xl font-bold uppercase">Dashboard</h1>
+        <h1 className="text-2xl font-bold uppercase">Resident Dashboard</h1>
       </div>
 
       {/* Navigation Links */}
@@ -76,7 +64,7 @@ export default function Sidebar({ handleLogout }) {
             key={link.name}
             to={link.path}
             className={`flex items-center p-3 rounded-lg hover:bg-gray-700 transition-colors ${
-              window.location.pathname === link.path ? "bg-gray-700" : ""
+              window.location.pathname === link.path ? 'bg-gray-700' : ''
             }`}
           >
             <span className="text-xl">{link.icon}</span>
