@@ -1,9 +1,9 @@
 // ResidentComplaint.jsx
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../../AuthContext.jsx"; // Adjust path as needed
-import { firestore } from "../../firebaseConfig.js"; // Adjust path as needed
+import { useAuth } from "../../AuthContext.jsx";
+import { firestore } from "../../firebaseConfig.js";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import ResidentSidebar from "./ResidentSidebar"; // Import the Sidebar (adjust path as needed)
+import ResidentSidebar from "./ResidentSidebar";
 
 const ResidentComplaint = () => {
   const { user, loading } = useAuth();
@@ -12,27 +12,17 @@ const ResidentComplaint = () => {
 
   useEffect(() => {
     if (loading) return;
-
-    if (!user) {
-      // Redirect or handle unauthenticated users (handled by App.jsx)
-      return;
-    }
+    if (!user) return;
 
     const fetchComplaints = async () => {
       try {
-        // Get the user's name from the auth context or user object
-        const userName = user.displayName || user.email.split("@")[0]; // Adjust based on how you store user names
-
-        // Query Firestore for complaints where the name matches the logged-in user's name
+        const userName = user.displayName || user.email.split("@")[0];
         const complaintsQuery = query(
-          collection(firestore, "complaints"), // Adjust collection name if different
-          where("name", "==", userName) // Match complaints by name
+          collection(firestore, "complaints"),
+          where("name", "==", userName)
         );
         const querySnapshot = await getDocs(complaintsQuery);
-        const complaintsData = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const complaintsData = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         setComplaints(complaintsData);
       } catch (err) {
         console.error("Error fetching complaints:", err);
@@ -45,84 +35,73 @@ const ResidentComplaint = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        Loading...
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 text-red-500">
-        {error}
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <p className="text-red-500 font-semibold text-lg">{error}</p>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <ResidentSidebar /> {/* Sidebar for layout consistency */}
-      <div className="flex-grow p-6 lg:ml-64">
-        <div className="bg-white rounded-lg shadow-md p-6 max-w-3xl mx-auto">
-          <h2 className="text-xl font-bold mb-4 text-center">Complaints</h2>
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-gray-200">
-                <th className="py-2 px-4 border-b text-center">Name</th>
-                <th className="py-2 px-4 border-b text-center">FlatNo</th>
-                <th className="py-2 px-4 border-b text-center">Complaint</th>
-                <th className="py-2 px-4 border-b text-center">Status</th>
-                <th className="py-2 px-4 border-b text-center">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {complaints.map((complaint) => (
-                <tr key={complaint.id} className="hover:bg-gray-50">
-                  <td className="py-2 px-4 border-b text-center">
-                    {complaint.name}
-                  </td>
-                  <td className="py-2 px-4 border-b text-center">
-                    {complaint.flatNo || "Not provided"}
-                  </td>
-                  <td className="py-2 px-4 border-b text-center">
-                    {complaint.description}{" "}
-                    {/* Changed from complaint.complaint to complaint.description */}
-                  </td>
-                  <td className="py-2 px-4 border-b text-center">
-                    <span
-                      className={`font-medium ${
-                        complaint.status === "Done"
-                          ? "text-green-600"
-                          : complaint.status === "In Progress"
-                          ? "text-yellow-600"
-                          : "text-red-600"
-                      }`}
-                    >
-                      {complaint.status}
-                    </span>
-                  </td>
-                  <td className="py-2 px-4 border-b text-center">
-                    <a
-                      href={`/view-details/${complaint.id}`} // Replace with your actual details route or link
-                      className="text-blue-500 hover:text-blue-700 underline"
-                    >
-                      View Details
-                    </a>
-                  </td>
+    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-200">
+      <ResidentSidebar />
+      <div className="flex-grow p-10 lg:ml-64">
+        <div className="bg-white shadow-xl rounded-2xl p-8 max-w-5xl mx-auto border border-gray-300">
+          <h2 className="text-3xl font-bold text-center text-gray-900 bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
+            My Complaints
+          </h2>
+          <div className="mt-6 overflow-x-auto">
+            <table className="w-full border-collapse rounded-lg overflow-hidden shadow-md">
+              <thead>
+                <tr className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-left">
+                  <th className="py-4 px-6">Name</th>
+                  <th className="py-4 px-6">Flat No</th>
+                  <th className="py-4 px-6">Complaint</th>
+                  <th className="py-4 px-6">Status</th>
+                  <th className="py-4 px-6">Action</th>
                 </tr>
-              ))}
-              {complaints.length === 0 && (
-                <tr>
-                  <td
-                    colSpan="5"
-                    className="py-2 px-4 border-b text-center text-gray-500"
-                  >
-                    No complaints found for your account.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {complaints.map((complaint) => (
+                  <tr key={complaint.id} className="hover:bg-gray-100 border-b">
+                    <td className="py-4 px-6">{complaint.name}</td>
+                    <td className="py-4 px-6">{complaint.flatNo || "Not provided"}</td>
+                    <td className="py-4 px-6">{complaint.description}</td>
+                    <td className="py-4 px-6 font-semibold text-center">
+                      <span
+                        className={`px-3 py-1 rounded-full text-white text-sm ${
+                          complaint.status === "Done"
+                            ? "bg-green-500"
+                            : complaint.status === "In Progress"
+                            ? "bg-yellow-500"
+                            : "bg-red-500"
+                        }`}
+                      >
+                        {complaint.status}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6 text-blue-600 hover:underline">
+                      <a href={`/view-details/${complaint.id}`}>View Details</a>
+                    </td>
+                  </tr>
+                ))}
+                {complaints.length === 0 && (
+                  <tr>
+                    <td colSpan="5" className="py-4 px-6 text-center text-gray-500">
+                      No complaints found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

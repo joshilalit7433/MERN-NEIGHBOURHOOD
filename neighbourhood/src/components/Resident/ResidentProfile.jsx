@@ -1,15 +1,16 @@
-// src/components/Resident/ResidentProfile.jsx
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../../AuthContext.jsx"; // Adjusted path based on your project structure
+import { useAuth } from "../../AuthContext.jsx";
 import { doc, getDoc } from "firebase/firestore";
-import { firestore } from "../../firebaseConfig.js"; // Adjusted path
-import ResidentSidebar from "./ResidentSidebar.jsx"; // Import the ResidentSidebar
+import { firestore } from "../../firebaseConfig.js";
+import ResidentSidebar from "./ResidentSidebar.jsx";
+import { Link, useNavigate } from "react-router-dom";
 
 const ResidentProfile = () => {
   const { user, loading: authLoading } = useAuth();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -18,13 +19,11 @@ const ResidentProfile = () => {
         setLoading(false);
         return;
       }
-
       try {
         const userDocRef = doc(firestore, "users", user.uid);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
-          const data = userDoc.data();
-          setUserData(data);
+          setUserData(userDoc.data());
         } else {
           setError("User data not found in Firestore");
         }
@@ -35,69 +34,82 @@ const ResidentProfile = () => {
         setLoading(false);
       }
     };
-
     fetchUserData();
   }, [user]);
 
   if (authLoading || loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        Loading...
       </div>
     );
   }
 
   if (error) {
-    return <div className="p-4 text-red-700 bg-red-100 rounded">{error}</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 text-red-500">
+        {error}
+      </div>
+    );
   }
 
-  if (!userData) {
-    return <div className="p-4">No user data available.</div>;
-  }
-
-  // Format the createdAt timestamp for display
-  const formattedCreatedAt = userData.createdAt
+  const formattedCreatedAt = userData?.createdAt
     ? new Date(userData.createdAt).toLocaleString("en-US", {
         day: "numeric",
-        month: "numeric",
+        month: "long",
         year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
       })
     : "Not specified";
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Resident Sidebar */}
       <ResidentSidebar />
-
-      {/* Main Profile Content */}
       <div className="flex-grow p-6 lg:ml-64">
-        <div className="max-w-md mx-auto bg-white p-6 shadow-md rounded-lg border border-gray-300">
-          <h1 className="text-2xl font-bold mb-6 text-center">
-            Resident Profile
-          </h1>
-          <div className="space-y-4 text-gray-800">
-            <p>
-              <strong>Name:</strong> {userData.name || "Not provided"}
-            </p>
-            <p>
-              <strong>Email:</strong> {user.email || "Not provided"}
-            </p>
-            <p>
-              <strong>Role:</strong> {userData.role || "Resident"}
-            </p>
-            <p>
-              <strong>Flat No:</strong> {userData.flatNo || "Not provided"}
-            </p>
-            <p>
-              <strong>Contact No:</strong>{" "}
-              {userData.contactNo || "Not provided"}
-            </p>
-            <p className="text-gray-600">
-              <strong>Created At:</strong> {formattedCreatedAt}
-            </p>
+        <div className="bg-white rounded-lg shadow-md p-6 max-w-3xl mx-auto border border-gray-300">
+          <h2 className="text-xl font-bold mb-4 text-center text-purple-700">My Profile</h2>
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+                <th className="py-2 px-4 text-left">Field</th>
+                <th className="py-2 px-4 text-left">Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="py-2 px-4 border-b font-medium">Name</td>
+                <td className="py-2 px-4 border-b text-gray-600">{userData?.name || "Not provided"}</td>
+              </tr>
+              <tr>
+                <td className="py-2 px-4 border-b font-medium">Email</td>
+                <td className="py-2 px-4 border-b text-gray-600">{user.email || "Not provided"}</td>
+              </tr>
+              <tr>
+                <td className="py-2 px-4 border-b font-medium">Flat No</td>
+                <td className="py-2 px-4 border-b text-gray-600">{userData?.flatNo || "Not provided"}</td>
+              </tr>
+              <tr>
+                <td className="py-2 px-4 border-b font-medium">Contact No</td>
+                <td className="py-2 px-4 border-b text-gray-600">{userData?.contactNo || "Not provided"}</td>
+              </tr>
+              <tr>
+                <td className="py-2 px-4 border-b font-medium">Joined On</td>
+                <td className="py-2 px-4 border-b text-gray-600">{formattedCreatedAt}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div className="mt-6 flex gap-4">
+            <Link
+              to="/resident-profile/edit"
+              className="w-full bg-blue-500 text-white py-2 rounded-lg text-center hover:bg-blue-600"
+            >
+              Edit Profile
+            </Link>
+            <Link
+              to="/resident-dashboard"
+              className="w-full bg-gray-300 text-gray-800 py-2 rounded-lg text-center hover:bg-gray-400"
+            >
+              Back to Dashboard
+            </Link>
           </div>
         </div>
       </div>

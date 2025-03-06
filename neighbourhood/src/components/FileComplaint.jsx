@@ -1,4 +1,3 @@
-// src/components/FileComplaint.jsx
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../AuthContext.jsx";
 import { firestore } from "../firebaseConfig";
@@ -10,6 +9,7 @@ import {
   doc,
 } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
+import ResidentSidebar from "./Resident/ResidentSidebar.jsx";
 
 export default function FileComplaint() {
   const { user, loading } = useAuth();
@@ -17,8 +17,8 @@ export default function FileComplaint() {
   const [formData, setFormData] = useState({
     member: "",
     issue: "",
-    flatNo: "", // Added flatNo field
-    status: "Pending", // Set status to "Pending" by default
+    flatNo: "",
+    status: "Pending",
   });
   const [formError, setFormError] = useState(null);
   const [formSuccess, setFormSuccess] = useState(null);
@@ -40,13 +40,13 @@ export default function FileComplaint() {
           setFormData((prev) => ({
             ...prev,
             member: userData.name || "Anonymous",
-            flatNo: userData.flatNo || "Not provided", // Fetch flatNo from user data
+            flatNo: userData.flatNo || "Not provided",
           }));
         } else {
           setFormData((prev) => ({
             ...prev,
             member: "Anonymous",
-            flatNo: "Not provided", // Default flatNo if user not found
+            flatNo: "Not provided",
           }));
         }
       } catch (err) {
@@ -78,8 +78,8 @@ export default function FileComplaint() {
       await addDoc(collection(firestore, "complaints"), {
         name: formData.member,
         description: formData.issue,
-        flatNo: formData.flatNo, // Include flatNo in the complaint data
-        status: formData.status, // Status is always "Pending"
+        flatNo: formData.flatNo,
+        status: formData.status,
         createdBy: user.uid,
         createdAt: serverTimestamp(),
       });
@@ -89,104 +89,66 @@ export default function FileComplaint() {
         member: formData.member,
         issue: "",
         flatNo: formData.flatNo,
-        status: "Pending", // Reset status to "Pending"
+        status: "Pending",
       });
-      navigate("/complaints"); // Redirect back to Complaints page after success
+      navigate("/complaints");
     } catch (error) {
       setFormError("Failed to file complaint.");
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        Loading...
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 flex justify-center items-center p-6">
-      <div className="max-w-md mx-auto bg-white p-6 shadow-lg rounded-lg">
-        <h1 className="text-2xl font-bold mb-4 text-center">File Complaint</h1>
-        {formError && (
-          <p className="text-red-500 text-center mb-4">{formError}</p>
-        )}
-        {formSuccess && (
-          <p className="text-green-500 text-center mb-4">{formSuccess}</p>
-        )}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label
-              htmlFor="member"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Member
-            </label>
-            <input
-              type="text"
-              id="member"
-              name="member"
-              value={formData.member}
-              readOnly
-              className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-gray-200 cursor-not-allowed"
-              placeholder="Your name"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="flatNo"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Flat No
-            </label>
-            <input
-              type="text"
-              id="flatNo"
-              name="flatNo"
-              value={formData.flatNo}
-              readOnly
-              className="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-gray-200 cursor-not-allowed"
-              placeholder="Your flat number"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="issue"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Issue
-            </label>
-            <textarea
-              id="issue"
-              name="issue"
-              value={formData.issue}
-              onChange={handleChange}
-              className="mt-1 block w-full border border-black rounded-md p-2 h-32 resize-none focus:outline-none focus:ring-0"
-              placeholder="Describe your issue..."
-              required
-            ></textarea>
-          </div>
-          <div className="flex justify-between">
-            <button
-              type="submit"
-              className="px-4 py-2 border border-black rounded-md bg-white hover:bg-gray-100 transition"
-            >
-              Submit
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate("/complaints")}
-              className="px-4 py-2 border border-black rounded-md bg-white hover:bg-gray-100 transition"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+    <div className="flex min-h-screen bg-gray-50">
+      <ResidentSidebar />
+      <div className="flex-grow flex items-center justify-center p-6">
+        <div className="max-w-lg w-full bg-white shadow-lg rounded-lg p-6 border border-gray-200">
+          <h2 className="text-2xl font-bold text-center text-purple-700 mb-4">
+            File a Complaint
+          </h2>
+          {formError && <p className="text-red-500 text-center">{formError}</p>}
+          {formSuccess && <p className="text-green-500 text-center">{formSuccess}</p>}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Member</label>
+              <input
+                type="text"
+                name="member"
+                value={formData.member}
+                readOnly
+                className="w-full border border-gray-300 rounded-md p-2 bg-gray-200 cursor-not-allowed"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Flat No</label>
+              <input
+                type="text"
+                name="flatNo"
+                value={formData.flatNo}
+                readOnly
+                className="w-full border border-gray-300 rounded-md p-2 bg-gray-200 cursor-not-allowed"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Issue</label>
+              <textarea
+                name="issue"
+                value={formData.issue}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-md p-2 h-32 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="Describe your issue..."
+                required
+              ></textarea>
+            </div>
+            <div className="flex justify-center">
+              <button
+                type="submit"
+                className="px-6 py-2 rounded-md text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:opacity-90"
+              >
+                Submit
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

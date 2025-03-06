@@ -1,10 +1,9 @@
-// src/components/Resident/ResidentNotice.jsx
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../../AuthContext.jsx"; // Adjust path as needed
-import { firestore } from "../../firebaseConfig.js"; // Adjust path as needed
+import { useAuth } from "../../AuthContext.jsx";
+import { firestore } from "../../firebaseConfig.js";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { Link } from "react-router-dom";
-import ResidentSidebar from "./ResidentSidebar.jsx"; // Import Sidebar for layout consistency (adjust path as needed)
+import ResidentSidebar from "./ResidentSidebar.jsx";
 
 export default function ResidentNotice() {
   const { user, loading } = useAuth();
@@ -13,17 +12,13 @@ export default function ResidentNotice() {
 
   useEffect(() => {
     if (loading) return;
-
-    if (!user) {
-      // Redirect or handle unauthenticated users (handled by App.jsx)
-      return;
-    }
+    if (!user) return;
 
     const fetchNotices = async () => {
       try {
         const noticesQuery = query(
           collection(firestore, "notices"),
-          orderBy("createdAt", "desc") // Order by creation date, newest first
+          orderBy("createdAt", "desc")
         );
         const querySnapshot = await getDocs(noticesQuery);
         const noticesData = querySnapshot.docs.map((doc) => ({
@@ -58,37 +53,44 @@ export default function ResidentNotice() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <ResidentSidebar /> {/* Sidebar for layout consistency */}
+      <ResidentSidebar />
       <div className="flex-grow p-6 lg:ml-64">
-        <div className="border-2 border-gray-300 rounded-lg p-6 bg-white shadow-lg max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6 text-black">
-            Events and Notices
-          </h1>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {notices.map((notice) => (
-              <div
-                key={notice.id}
-                className="bg-gray-100 p-4 rounded-lg shadow-md border border-gray-200"
-              >
-                <h3 className="text-lg font-semibold mb-2">{notice.title}</h3>
-                <p className="text-gray-600 mb-2">Date: {notice.date}</p>
-                <p className="text-gray-600 mb-4">Time: {notice.time}</p>
-                <div className="flex justify-center">
-                  <Link
-                    to={`/view-details/${notice.id}`} // Updated to use universal ViewDetails route
-                    className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
-                  >
-                    View Details
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-          {notices.length === 0 && (
-            <p className="mt-4 text-gray-500 text-center">
-              No events or notices found.
-            </p>
-          )}
+        <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
+          <h2 className="text-xl font-bold mb-4 text-center text-purple-600">Events and Notices</h2>
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+                <th className="py-2 px-4 border-b text-center">Title</th>
+                <th className="py-2 px-4 border-b text-center">Date</th>
+                <th className="py-2 px-4 border-b text-center">Time</th>
+                <th className="py-2 px-4 border-b text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {notices.map((notice) => (
+                <tr key={notice.id} className="hover:bg-gray-50">
+                  <td className="py-2 px-4 border-b text-center">{notice.title}</td>
+                  <td className="py-2 px-4 border-b text-center">{notice.date}</td>
+                  <td className="py-2 px-4 border-b text-center">{notice.time}</td>
+                  <td className="py-2 px-4 border-b text-center">
+                    <Link
+                      to={`/view-details/${notice.id}`}
+                      className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                    >
+                      View Details
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+              {notices.length === 0 && (
+                <tr>
+                  <td colSpan="4" className="py-2 px-4 border-b text-center text-gray-500">
+                    No events or notices found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

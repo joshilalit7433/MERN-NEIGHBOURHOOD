@@ -16,11 +16,11 @@ export default function ResidentSidebar({ handleLogout }) {
   const navigate = useNavigate();
 
   const sidebarLinks = [
-    {
-      name: "Dashboard",
-      icon: <LayoutDashboard className="text-purple-400" />,
-      path: "/resident-dashboard",
-    },
+    // {
+    //   name: "Dashboard",
+    //   icon: <LayoutDashboard className="text-purple-400" />,
+    //   path: "/resident-dashboard",
+    // },
     {
       name: "Profile",
       icon: <User className="text-green-400" />,
