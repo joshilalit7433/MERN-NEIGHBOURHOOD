@@ -51,12 +51,11 @@ export default function Sidebar() {
             name: "Complaints",
             icon: <FileText className="text-blue-400" />,
             path: "/complaints",
-          }
-         
+          },
         ]
       : []),
     {
-      name: "Events and Notices",
+      name: "Events / Notices",
       icon: <Calendar className="text-pink-400" />,
       path: "/events",
     },
